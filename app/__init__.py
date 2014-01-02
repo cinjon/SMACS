@@ -1,4 +1,5 @@
 from flask import Flask, g
+import datetime
 # from flask.ext.login import LoginManager, current_user
 
 flask_app = Flask(__name__)
@@ -18,3 +19,7 @@ flask_app.debug = True
 
 import views
 import models
+
+order_book = models.OrderBook()
+order_book.request_orders()
+print datetime.datetime.fromtimestamp(float(order_book.get_last_updated())).strftime('%Y-%m-%d %H:%M:%S')
