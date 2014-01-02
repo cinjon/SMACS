@@ -4,7 +4,7 @@ Jinja2==2.7.1
 MarkupSafe==0.18
 Werkzeug==0.9.4
 gunicorn==18.0
--e svn+http://google-visualization-python.googlecode.com/svn/trunk@26#egg=gviz_api.py-1.8.2-py2.7-dev_r26
+pip install http://google-visualization-python.googlecode.com/files/gviz_api_py-1.8.2.tar.gz
 itsdangerous==0.23
 virtualenv==1.10.1
 wsgiref==0.1.2
