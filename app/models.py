@@ -33,11 +33,12 @@ def weighted_avg(orders):
 
 def _btc_book(usd, orders):
     ret = []
+    usd = float(usd)
     for price, num in orders:
         if usd == 0:
             break
         num_coins = min(usd/price, num)
-        usd = usd - num_coins*usd
+        usd = usd - num_coins*price
         ret.append([price, num_coins])
     return ret
 
