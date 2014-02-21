@@ -1,7 +1,7 @@
-from models import Word
+import re
+import app
 from BeautifulSoup import BeautifulSoup
 from BeautifulSoup import BeautifulStoneSoup
-import re
 
 price_regex = re.compile("^(\d+)[^\d]+(\d{5})$")
 illinois = '/Users/cinjonresnick/Desktop/org/code/smacs/illinois'
@@ -36,13 +36,9 @@ def get_word_bbox(word):
 
 def clean_text(text):
     #list of heuristic rules to clean stuff with
-    if 'EL|X|R' in text:
-        parts = text.split('EL|X|R')
-        text = 'ELIXIR'.join(parts)
-    elif 'T|C' in text:
-        parts = text.split('T|C')
-        text = 'TIC'.join(parts)
-
+    text = text.replace('|', 'I')
+    if 'ELIXIR' in text and not 'ELIXIR ' in text:
+        text.replace('ELIXIR', 'ELIXIR ')
     return text
 
 def get_line_words(line):
@@ -68,5 +64,9 @@ def get_line_words(line):
             text = '.'.join(regex.groups())
         else:
             text = clean_text(text)
-        words.append(Word(text, int(bbox['l']), int(bbox['t']), int(bbox['r']), int(bbox['b'])))
+        words.append(
+            app.models.Word(
+                text, int(bbox['l']), int(bbox['t']), int(bbox['r']), int(bbox['b'])
+                )
+            )
     return words
