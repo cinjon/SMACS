@@ -92,7 +92,8 @@ def get_strength(name):
 
 forms = ['tablet', 'capsule', 'cream', 'drops', 'suspension',
          'vial', 'spray', 'ointment', 'lotion', 'syrup',
-         'syringe', 'elixir', ' gel ', 'powder', 'piggyback']
+         'syringe', 'elixir', ' gel ', 'powder', 'piggyback',
+         'shampoo']
 def parse_drug_name(words):
     full_name = ' '.join([w.txt for w in words])
     lowercase = full_name.lower()
