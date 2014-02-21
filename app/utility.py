@@ -1,14 +1,33 @@
 import datetime
 import random
 import string
+import re
 from werkzeug.security import generate_password_hash, check_password_hash
 
 start_date = datetime.datetime(year=1970,month=1,day=1)
+months = ['january', 'february', 'march', 'april', 'may', 'june', 'july',
+          'august', 'september', 'october', 'november', 'december']
 
 def get_time():
     return datetime.datetime.utcnow()
 
-#TODO: turn get_time entries into these.
+legible_date_regex = re.compile("^([a-z]+)\s+(\d+),\s+(\d+)$")
+def datetime_from_legible(date):
+    # date: January 17, 2013
+    ldate = date.lower().strip()
+    match = legible_date_regex.match(ldate)
+    if not match:
+        return None
+    try:
+        groups = match.groups()
+        month = months.index(groups[0]) + 1
+        year  = int(groups[2])
+        day   = int(groups[1])
+        return datetime.date(year, month, day)
+    except Exception, e:
+        print e
+        return None
+
 def get_unixtime(_datetime=None):
     if _datetime:
         return (_datetime - start_date).total_seconds()

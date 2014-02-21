@@ -10,29 +10,41 @@ class Drug(app.db.Model):
     id = app.db.Column(app.db.Integer, primary_key=True)
     creation_time = app.db.Column(app.db.DateTime)
     label_name = app.db.Column(app.db.Text())
-    generic_name = app.db.Column(app.db.Text(), index=True)
-    ful = app.db.Column(app.db.Float)
-    smac = app.db.Column(app.db.Float)
-    effective_date = app.db.Column(app.db.DateTime, index=True)
+    generic_name = app.db.Column(app.db.Text(), index=True, unique=True)
     strength = app.db.Column(app.db.String(25))
     form = app.db.Column(app.db.String(25))
     companies = app.db.relationship('Company', secondary=drugs,
                                     backref=app.db.backref('drugs', lazy='dynamic'))
+    listings = app.db.relationship('Listing', lazy='dynamic', backref='drug')
 
-    def __init__(self, generic_name, smac, effective_date, strength, form, label_name=None, ful=None):
+    def __init__(self, generic_name, strength, form, label_name=None):
         self.generic_name = generic_name
-        self.smac = smac
-        self.effective_date = effective_date
+        self.label_name = label_name
         self.strength = strength
         self.form = form
-        self.label_name = label_name
+        self.creation_time = app.utility.get_time()
+
+class Listing(app.db.Model):
+    id = app.db.Column(app.db.Integer, primary_key=True)
+    creation_time = app.db.Column(app.db.DateTime)
+    ful = app.db.Column(app.db.Float)
+    smac = app.db.Column(app.db.Float)
+    state = app.db.Column(app.db.String(2), index=True)
+    drug_id = app.db.Column(app.db.Integer, app.db.ForeignKey('drug.id'), index=True)
+    effective_date = app.db.Column(app.db.DateTime, index=True)
+
+    def __init__(self, smac, effective_date, state, drug_id, ful=None):
+        self.smac = smac
+        self.effective_date = effective_date
         self.ful = ful
+        self.state = state
+        self.drug_id = drug_id
         self.creation_time = app.utility.get_time()
 
 class Company(app.db.Model):
     id = app.db.Column(app.db.Integer, primary_key=True)
     creation_time = app.db.Column(app.db.DateTime)
-    name = app.db.Column(app.db.Text(), index=True)
+    name = app.db.Column(app.db.Text(), index=True, unique=True)
 
     def __init__(self, name):
         self.name = name

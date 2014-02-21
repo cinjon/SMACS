@@ -4,12 +4,10 @@ import re
 
 date_regex  = re.compile("^(\d{1,2})/(\d{1,2})/(\d{4})$")
 
-months = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-          'August', 'September', 'October', 'November', 'December']
 def get_effective_date(line):
     word_found = False
     for position, word in enumerate(line):
-        if word.txt in months:
+        if word.txt.lower() in app.utility.months:
             word_found = True
             break
     if word_found:
@@ -124,7 +122,7 @@ def get_title(line):
     return ' '.join([w.txt for w in line])
 
 def process(loc, date=None, cols=None, title=None):
-    line_words = [app.ops.load.get_line_words(line) for line in app.ops.load.soup_ocr(loc)]
+    line_words = [app.process.illinois.load.get_line_words(line) for line in app.process.illinois.load.soup_ocr(loc)]
     if not title:
         title = get_title(line_words[2])
     if not date:
@@ -166,8 +164,8 @@ def process_hocr_dir(directory):
             continue
         page_assignments, date, cols, title = process(directory + f, date, cols, title)
         assignments.extend(page_assignments)
-#         app.ops.ocr.done_file(directory, f)
-    return assignments, date, cols, title
+#         app.process.illinois.ocr.done_file(directory, f)
+    return assignments, date
 
 def process_dir(directory):
     #assumes directory has:
@@ -180,15 +178,19 @@ def process_dir(directory):
     for f in os.listdir(src):
         if f == 'done':
             continue
-        app.ops.ocr.decrypt_pdf(src, decrypted, f)
-        app.ops.ocr.done_file(src, f)
+        app.process.illinois.ocr.decrypt_pdf(src, decrypted, f)
+        app.process.illinois.ocr.done_file(src, f)
 
-        app.ops.ocr.ghostscript_pdf_to_png(decrypted, png, f)
-        app.ops.ocr.done_file(decrypted, f)
+        app.process.illinois.ocr.ghostscript_pdf_to_png(decrypted, png, f)
+        app.process.illinois.ocr.done_file(decrypted, f)
 
         for png_f in os.listdir(png):
-            app.ops.ocr.tesseract_png_to_hocr(png, hocr, png_f)
-            app.ops.ocr.done_file(png, png_f)
+            app.process.illinois.ocr.tesseract_png_to_hocr(png, hocr, png_f)
+            app.process.illinois.ocr.done_file(png, png_f)
+
+    assignments, date, columns, title = process_hocr_dir(hocr)
+    date = app.utility.datetime_from_legible(date)
+    return assignments, date
 
 if __name__ == '__main__':
-    app.ops.load.soup_file()
+    pass

@@ -4,8 +4,7 @@ from BeautifulSoup import BeautifulSoup
 from BeautifulSoup import BeautifulStoneSoup
 
 price_regex = re.compile("^(\d+)[^\d]+(\d{5})$")
-illinois = '/Users/cinjonresnick/Desktop/org/code/smacs/illinois'
-location = illinois + '/out/illinois_master_smac_jan_9_2014_gs.html'
+illinois = app.basedir + '/illinois'
 
 def read_file(loc):
     try:

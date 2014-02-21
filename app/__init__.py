@@ -1,7 +1,9 @@
 from flask import Flask, g
 from flask.ext.sqlalchemy import SQLAlchemy
 import utility
+import config
 
+basedir = config.basedir
 
 flask_app = Flask(__name__)
 flask_app.config.from_object('config')
@@ -17,4 +19,4 @@ def before_first_request():
 
 import views
 import models
-import ops
+import process
