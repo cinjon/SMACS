@@ -1,10 +1,10 @@
 import app
 import os
-import re
 
-date_regex  = re.compile("^(\d{1,2})/(\d{1,2})/(\d{4})$")
+parent_directory = os.path.dirname(os.path.realpath(__file__))
+documents = parent_directory + '/documents'
 
-def get_effective_date(line):
+def get_effective_date_from_header(line):
     word_found = False
     for position, word in enumerate(line):
         if word.txt.lower() in app.utility.months:
@@ -15,7 +15,7 @@ def get_effective_date(line):
     else:
         return None
 
-def clean_columns(columns):
+def merge_column_names(columns):
     ret = []
     position = 0
     while(position < len(columns)):
@@ -51,29 +51,34 @@ def clean_columns(columns):
             position += 1
     return ret
 
-def get_col_bboxes(line):
+def get_column_bounding_boxes(line):
     columns = []
     for word in line:
-        columns.append(
-            app.models.Column(
-                word.txt, int(word.l), int(word.t), int(word.r), int(word.b)
-                )
-            )
-    return clean_columns(columns)
+        columns.append(app.models.Column(word.txt,
+                                         int(word.l), int(word.t),
+                                         int(word.r), int(word.b)))
+    return merge_column_names(columns)
 
-def get_name(line, next_column):
-    position = 0
+def get_generic_name_words(line, next_column, len_label_words=0):
+    position = len_label_words
     while(position < len(line)):
         word = line[position]
         if word.r >= next_column.l:
             break
         position += 1
+    return line[len_label_words:position]
+
+def get_label_name_words(line, next_column):
+    position = 0
+    while(position < len(line)):
+        word = line[position]
+        if word.r >= 1100:
+            break
+        position += 1
     return line[:position]
 
-dose_regex = re.compile("^(.*)\s(\d*\.*\d+)\s{0,1}([a-z\%]+)|(.*)\s(\d*\.*\d+[a-z\%]*\-\d*\.*\d+\s{0,1}[a-z\%]*)$")
-
-def get_strength(name):
-    match = dose_regex.match(name)
+def get_strength_of_drug(name):
+    match = app.process.regex.dose_regex.match(name)
     if not match:
         return None
     groups = match.groups()
@@ -88,59 +93,53 @@ def get_strength(name):
         return groups[num].strip()
     return ''.join([g.strip() for g in groups[num+1:] if g])
 
+def get_title_of_drug(line):
+    return ' '.join([w.txt for w in line])
+
+def get_generic_name_for_specialty_drug(words, column):
+    ret = []
+    word = 0
+    while(words[word].r < column.l):
+        ret.append(words[word])
+        word += 1
+    return ret
+
 forms = ['tablet', 'capsule', 'cream', 'drops', 'suspension',
          'vial', 'spray', 'ointment', 'lotion', 'syrup',
-         'syringe', 'elixir', ' gel ', 'powder', 'piggyback',
+         'syringe', 'elixir', 'gel', 'powder', 'piggyback',
          'shampoo']
-def parse_drug_name(words):
+def get_drug_information_from_name_words(words):
     full_name = ' '.join([w.txt for w in words])
     lowercase = full_name.lower()
-    strength = get_strength(lowercase)
+    strength = get_strength_of_drug(lowercase)
     for form in forms:
         if form in lowercase:
             return full_name, form.title(), strength
     return full_name, None, strength
 
-def assign_lines(names, lines, columns, title):
+def make_drug_line_dicts(names, lines, columns, title, date):
     ret = []
     for pos, line in enumerate(lines):
-        if 'Generic' in title:
-            generic_name, form, strength = parse_drug_name(names[pos])
-            assignment = {'Generic Name':generic_name, 'Form':form, 'Strength':strength}
-        else:
-            #TODO: for specialty drugs
-            assignment = {columns[0].title: ' '.join([w.txt for w in names[pos]])}
+        generic_name, form, strength = get_drug_information_from_name_words(names[pos])
+        assignment = {'Generic Name':generic_name, 'Form':form, 'Strength':strength}
+
         for word in line[len(names[pos]):]:
             for column in columns[1:]:
                 if column.contains(word):
                     assignment[column.title] = word.txt
                     break
+        assignment['Date'] = date
         ret.append(assignment)
     return ret
 
-def get_title(line):
-    return ' '.join([w.txt for w in line])
-
-def process(loc, date=None, cols=None, title=None):
-    line_words = [app.process.illinois.load.get_line_words(line) for line in app.process.illinois.load.soup_ocr(loc)]
-    if not title:
-        title = get_title(line_words[2])
-    if not date:
-        date = get_effective_date(line_words[3])
-
-    column_line = 4
-    if 'Generic' in title:
-        column_line += 2
-    if not cols:
-        cols = get_col_bboxes(line_words[column_line])
-
+def process_generic_page(line_words, drug_start, cols, title, date):
     line_names = []
     drug_lines = []
-    for line in line_words[(2+column_line):]:
-        name = get_name(line, cols[1])
-        if len(name) == 0 or date_regex.match(name[0].txt):
+    for line in line_words[drug_start:]:
+        name = get_generic_name_words(line, cols[1], 0)
+        if len(name) == 0 or app.process.regex.date_regex.match(name[0].txt):
             continue
-        if len(name) == len(line): #really a part of the previous one
+        if len(name) == len(line): #a part of the previous line
             prev_drug_line_name = drug_lines[-1][:len(line_names[-1])]
             prev_drug_line_name.extend(name)
             prev_drug_line_name.extend(drug_lines[-1][len(line_names[-1]):])
@@ -150,47 +149,29 @@ def process(loc, date=None, cols=None, title=None):
             line_names.append(name)
             drug_lines.append(line)
 
-    assigned_lines = assign_lines(line_names, drug_lines, cols, title)
-    return assigned_lines, date, cols, title
+    return make_drug_line_dicts(line_names, drug_lines, cols, title, date), date, cols, title
 
-def process_hocr_dir(directory):
-    assignments = []
-    date = None
-    cols = None
-    title = None
-    for f in os.listdir(directory):
-        print f
-        if f == 'done':
-            continue
-        page_assignments, date, cols, title = process(directory + f, date, cols, title)
-        assignments.extend(page_assignments)
-#         app.process.illinois.ocr.done_file(directory, f)
-    return assignments, date
+def process(loc, date=None, cols=None, title=None):
+    line_words = [app.process.load.get_line_words(line) for line in app.process.load.soup_ocr(loc)]
+    if not title:
+        title = get_title_of_drug(line_words[2])
+    if not date:
+        date = get_effective_date_from_header(line_words[3])
+        date = app.utility.datetime_from_legible(date)
 
-def process_dir(directory):
-    #assumes directory has:
-    #/src with pdfs to process, /decrypted, /png, /hocr
-    src = directory + '/src/'
-    decrypted = directory + '/decrypted/'
-    png = directory + '/png/'
-    hocr = directory + '/hocr/'
+    if not cols:
+        column_line = 4
+        if 'Generic' in title:
+            column_line += 2
+        cols = get_column_bounding_boxes(line_words[column_line])
 
-    for f in os.listdir(src):
-        if f == 'done':
-            continue
-        app.process.illinois.ocr.decrypt_pdf(src, decrypted, f)
-        app.process.illinois.ocr.done_file(src, f)
+    for drug_start, line in enumerate(line_words):
+        txts = [w.txt for w in line]
+        if 'Price' in txts and 'Effective' in txts and 'SMAC' in txts:
+            break
+    drug_start = drug_start + 1
 
-        app.process.illinois.ocr.ghostscript_pdf_to_png(decrypted, png, f)
-        app.process.illinois.ocr.done_file(decrypted, f)
-
-        for png_f in os.listdir(png):
-            app.process.illinois.ocr.tesseract_png_to_hocr(png, hocr, png_f)
-            app.process.illinois.ocr.done_file(png, png_f)
-
-    assignments, date, columns, title = process_hocr_dir(hocr)
-    date = app.utility.datetime_from_legible(date)
-    return assignments, date
-
-if __name__ == '__main__':
-    pass
+    if 'Generic' in title:
+        return process_generic_page(line_words, drug_start, cols, title, date)
+    # elif 'Specialty' in title:
+    #     return _process_specialty(line_words, drug_start, cols, title, date)

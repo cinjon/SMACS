@@ -1,8 +1,6 @@
 import os
 import subprocess
 
-illinois = '/Users/cinjonresnick/Desktop/org/code/smacs/illinois'
-
 def decrypt_pdf(from_dir, to_dir, name):
     #name should be in dir/src
     command = 'qpdf --decrypt %s %s' % (from_dir + name,
@@ -18,8 +16,11 @@ def ghostscript_pdf_to_png(from_dir, to_dir, name):
     subprocess.call(command, shell=True)
 
 def tesseract_png_to_hocr(from_dir, to_dir, name):
+    to_dir += '_'.join(name.split('.')[0].split('_')[:-1])
+    if not os.path.exists(to_dir):
+        os.mkdir(to_dir)
     command = 'tesseract %s %s hocr' % (from_dir + name,
-                                        to_dir + name.strip('.png'))
+                                        to_dir + '/' + name.strip('.png'))
     subprocess.call(command, shell=True)
 
 def done_file(directory, name):
@@ -30,4 +31,3 @@ def done_file(directory, name):
         os.makedirs(done_dir)
     command = 'mv %s %s' % (directory + name, done_dir + '/' + name)
     subprocess.call(command, shell=True)
-
