@@ -225,9 +225,11 @@ def make_drug_line_dicts(names, lines, columns, date):
 def process_generic_page(line_words, drug_start, columns, date):
     line_names = []
     drug_lines = []
-    for line in line_words[drug_start:]:
+    start = drug_start
+    if len(get_generic_name_words(line_words[drug_start], columns[1], 0)) == len(line_words[drug_start]):
+        start -= 1
+    for line in line_words[start:]:
         name = get_generic_name_words(line, columns[1], 0)
-        # try:
         if len(name) == 0 or app.process.regex.date_regex.match(name[0].txt):
             continue
         if len(name) == len(line): #a part of the previous line
@@ -239,9 +241,6 @@ def process_generic_page(line_words, drug_start, columns, date):
         else:
             line_names.append(name)
             drug_lines.append(line)
-            # except Exception, e:
-        #     print 'Exception in process_generic_page: ' + ' '.join([w.txt for w in line]) + ', ' + str(date)
-        #     print e
 
     return make_drug_line_dicts(line_names, drug_lines, columns, date), date, columns, drug_start
 
