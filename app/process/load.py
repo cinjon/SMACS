@@ -32,14 +32,16 @@ def _get_word_bbox(word):
         return None
     return {'l':parts[1], 't':parts[2], 'r':parts[3], 'b':parts[4]}
 
+cleaning_instructions = [
+    ['SEROSTWI','SEROSTIM'], ['IWGIGT','MG KIT'], ['SEROSTHVI','SEROSTIM'],
+    ['|','I'], ['GenerIc_Name', 'Generic_Name']
+]
 def _clean_text(text):
     #list of heuristic rules to clean stuff with
-    text = text.replace('|', 'I')
+    for instruction in cleaning_instructions:
+        text = text.replace(instruction[0], instruction[1])
     if 'ELIXIR' in text and not 'ELIXIR ' in text:
-        text.replace('ELIXIR', 'ELIXIR ')
-    text.replace('SEROSTWI', 'SEROSTIM')
-    text.replace('IWGIGT', 'MG KIT')
-    text.replace('SEROSTHVI', 'SEROSTIM')
+        text = text.replace('ELIXIR', 'ELIXIR ')
     return text
 
 def get_line_words(line):
@@ -47,17 +49,17 @@ def get_line_words(line):
     words = []
     for ocr_word in ocr_words:
         contents = ocr_word.contents
+        if len(contents) == 0:
+            print 'Error: no contents in word'
+            continue
         bbox = _get_word_bbox(ocr_word)
         if not bbox:
             print 'This word has a bad box: %s' % ocr_word
             continue
 
-        if len(contents) == 1:
-            text = ocr_word.text.strip()
-        else:
-            text = contents[1].text.strip()
-
-        text = _clean_text(text)
+        text = _clean_text(ocr_word.text.strip())
+        if text == 'Page': #Page 1 of 1, etc
+            break
         regex = price_regex.match(text)
         if regex:
             text = '.'.join(regex.groups())

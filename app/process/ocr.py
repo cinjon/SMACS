@@ -20,7 +20,7 @@ def tesseract_png_to_hocr(from_dir, to_dir, name):
     if not os.path.exists(to_dir):
         os.mkdir(to_dir)
     command = 'tesseract %s %s hocr' % (from_dir + name,
-                                        to_dir + '/' + name.strip('.png'))
+                                        to_dir + '/' + name.split('.png')[0])
     subprocess.call(command, shell=True)
 
 def done_file(directory, name):

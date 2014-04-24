@@ -11,16 +11,27 @@ months = ['january', 'february', 'march', 'april', 'may', 'june', 'july',
 def get_time():
     return datetime.datetime.utcnow()
 
-legible_date_regex = re.compile("^([a-z]+)\s+(\d+),\s+(\d+)$")
-def datetime_from_legible(date):
-    # date: January 17, 2013
-    ldate = date.lower().strip()
-    match = legible_date_regex.match(ldate)
+proposed_date_regex = re.compile("^.*(\d{2})-(\d{2})-(\d{4}).*$")
+def datetime_from_proposed(date):
+    match = proposed_date_regex.match(date)
     if not match:
         return None
     try:
         groups = match.groups()
-        month = months.index(groups[0]) + 1
+        return datetime.date(int(groups[2]), int(groups[0]), int(groups[1]))
+    except Exception, e:
+        print e
+        return None
+
+legible_date_regex = re.compile("^.*([A-Z][a-z]+)\s+(\d+),\s*(\d+).*$")
+def datetime_from_legible(date):
+    # date: January 17, 2013
+    match = legible_date_regex.match(date)
+    if not match:
+        return None
+    try:
+        groups = match.groups()
+        month = months.index(groups[0].lower().strip()) + 1
         year  = int(groups[2])
         day   = int(groups[1])
         return datetime.date(year, month, day)

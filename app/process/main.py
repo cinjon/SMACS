@@ -1,5 +1,6 @@
 import app
 import os
+import traceback
 
 def get_directory_from_state(state):
     directory = None
@@ -27,7 +28,7 @@ def process_from_src_to_hocr(state):
     hocr = directory + '/hocr/'
 
     for f in os.listdir(src):
-        if f == 'done':
+        if f == 'done' or f == '.DS_Store':
             continue
         print 'Starting: %s' % f
         print 'Decrypting'
@@ -50,20 +51,35 @@ def process_from_hocr(state):
         return
 
     directory += '/hocr/'
-    assignments = []
+    master_assignments = {}
     for root, dirs, files in os.walk(directory): #each dir is a diff pdf
         dir_name = root.split('/')[-1]
         if dir_name == '' or dir_name == 'done': #top-level || done docs
             continue
         date = None
-        cols = None
-        title = None
-        for f in files:
-            page_assignments, date, cols, title = _process(
-                root + '/' + f, date, cols, title)
+        columns = None
+        drug_start = None
+        assignments = []
+        print root
+        for num, f in enumerate(files): #this is bad because the file order is wack. be careful
+            if f == '.DS_Store' or f == 'done':
+                continue
+            absolute_path = root + '/' + f
+            try:
+                page_assignments, date, columns, drug_start = _process(absolute_path, date, columns, drug_start)
+                if num == 0:
+                    drug_start = None
+            except Exception, e:
+                print 'Error: %s, ds: %s' % (absolute_path, drug_start)
+                traceback.print_exc()
+
+                break
+            if not date:
+                print 'No Date Found: %s' % absolute_path
             assignments.extend(page_assignments)
             # app.process.ocr.done_file(root + '/', f)
-    return assignments
+        master_assignments[root] = assignments
+    return master_assignments
 
 def get_float_of_value(d, key):
     value = d.get(key)
@@ -99,3 +115,5 @@ def process_to_db(state):
         drug.listings.append(listing)
         app.db.session.add(listing)
         app.db.session.commit()
+
+# second_files = ['/'.join(f.split('/')[:-1]) + '/' + f.split('/')[-1].strip('1.html') + '2.html' for f in first_files]
