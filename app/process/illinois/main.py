@@ -4,6 +4,12 @@ import os
 parent_directory = os.path.dirname(os.path.realpath(__file__))
 documents = parent_directory + '/documents'
 
+def has_colliding_column(column, line):
+    for word in line:
+        if word.r >= column.l and column.r >= word.l:
+            return True, word.txt
+    return False, None
+
 def is_missing_column(prev, _next, line):
     if prev.r >= _next.l and _next.r >= prev.l: #prev and next mix
         l = min(prev.l, _next.l)
@@ -12,6 +18,18 @@ def is_missing_column(prev, _next, line):
             if num < len(line)-1 and w.r < l and line[num+1].l > r:
                 return True, num
     return False, None
+
+def is_part_of_previous_line(name_line, line, columns):
+    if len(name_line) == len(line): #most of the time will work
+        return True
+    for word in line[len(name_line):]: #smac-list-effective-8-17-10.pdf has notes which flummox the above
+        try:
+            fl = float(word.txt)
+            if '.' in word.txt:
+                return False
+        except Exception, e:
+            pass
+    return True
 
 def get_drug_start(line_words):
     for drug_start, line in enumerate(line_words):
@@ -72,6 +90,8 @@ def merge_column_names(columns, next_line):
                     column.title = 'Effective Date'
                 elif 'Proposed' in next_line_words:
                     column.title = 'Proposed SMAC'
+            elif column.title == 'Current':
+                column.title = 'SMAC'
             ret.append(column)
             position += 1
             continue
@@ -95,7 +115,7 @@ def merge_column_names(columns, next_line):
                                            column.r, max(column.b, next_column.b))
             ret.append(new_column)
             position += 1
-        elif column.title == 'Current':
+        elif column.title == 'Current' or column.title == 'Current.':
             if next_column.title == 'FUL':
                 new_column = app.models.Column('FUL',
                                                column.l, min(column.t, next_column.t),
@@ -106,13 +126,20 @@ def merge_column_names(columns, next_line):
                 column.title = 'SMAC'
                 ret.append(column)
         elif column.title == 'SMAC' and next_column.title == 'Notes' and position > 0:
-            if columns[position-1].title == 'Current':
+            prev_title = columns[position-1].title
+            has_collision, text = has_colliding_column(column, next_line)
+            if has_collision:
+                column.title = column.title + ' ' + text
+            elif prev_title == 'Current':
                 column.title = 'Effective Date'
-            elif columns[position-1].title == 'Current SMAC':
+            elif prev_title == 'Current SMAC' or prev_title == 'SMAC': #column changed from CuSrl..
                 column.title = 'Proposed SMAC'
             ret.append(column)
-        elif column.title == 'Current SMAC':
+        elif column.title == 'Current SMAC' or (column.title == 'CuSrl:ne:(t:lL' and next_column.title == 'SMAC'):
             column.title = 'SMAC'
+            ret.append(column)
+        elif column.title == 'Cgrint' and next_column.title == 'CuSrl:ne:(t:lL':
+            column.title = 'FUL'
             ret.append(column)
         else:
             ret.append(column)
@@ -140,8 +167,6 @@ def get_column_bounding_boxes(line, prev_line, next_line):
     is_missing, column = is_missing_column(prev, _next, line)
     if is_missing:
         column += 1
-        print [c.title for c in columns]
-        print column
         columns = columns[:column] + [
             app.models.Column(prev.txt + ' ' + _next.txt,
                               min(int(prev.l), int(_next.l)), int(prev.t),
@@ -232,7 +257,7 @@ def process_generic_page(line_words, drug_start, columns, date):
         name = get_generic_name_words(line, columns[1], 0)
         if len(name) == 0 or app.process.regex.date_regex.match(name[0].txt):
             continue
-        if len(name) == len(line): #a part of the previous line
+        if is_part_of_previous_line(name, line, columns):
             prev_drug_line_name = drug_lines[-1][:len(line_names[-1])]
             prev_drug_line_name.extend(name)
             prev_drug_line_name.extend(drug_lines[-1][len(line_names[-1]):])
@@ -256,7 +281,7 @@ def process(loc, date=None, columns=None, drug_start=None):
         print 'No Columns Found: %s' % loc
         return [], None, None
 
-    if not drug_start:
-        drug_start = get_drug_start(line_words)
+    ## We do this everytime because the conversion isn't reliable
+    drug_start = get_drug_start(line_words)
 
     return process_generic_page(line_words, drug_start, columns, date)

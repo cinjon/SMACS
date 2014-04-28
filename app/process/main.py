@@ -87,33 +87,58 @@ def get_float_of_value(d, key):
         return float(value)
     return None
 
+def _process_to_db(file_assignments, state):
+    for f, assignments in file_assignments.iteritems():
+        print f
+        seen_generic_names = {}
+        for assignment in assignments:
+            generic_name = assignment.get('Generic Name')
+            if not generic_name:
+                print 'No Generic Name for assignment'
+                print assignment
+                continue
+
+            if generic_name in seen_generic_names:
+                print '%s seen already' % generic_name
+                print seen_generic_names[generic_name]
+                print assignment
+                continue
+            seen_generic_names[generic_name] = assignment
+
+            drug = app.models.Drug.query.filter(
+                app.models.Drug.generic_name == generic_name).first() #should be just 1
+            if not drug: #make drug
+                drug = app.models.Drug(
+                    generic_name, assignment.get('Strength'),
+                    assignment.get('Form'), assignment.get('Label Name'))
+                app.db.session.add(drug)
+
+            try:
+                listing = app.models.Listing(
+                    effective_date=assignment.get('Date'),
+                    smac=get_float_of_value(assignment, 'SMAC'),
+                    ful=get_float_of_value(assignment, 'FUL'),
+                    proposed=get_float_of_value(assignment, 'Proposed SMAC'),
+                    file_found=f.split('/')[-1],
+                    state=state,
+                    drug_id=drug.id)
+            except Exception, e:
+                print 'Listing failed'
+                print assignment
+                break
+            drug.listings.append(listing)
+            app.db.session.add(listing)
+            app.db.session.commit()
+        print '\n'
+
 def process_to_db(state):
     if not state:
         print "Yo, where the fuck's your state?"
         return
-    elif state == 'IL':
-        assignments = app.process.illinois.main.process_hocr_dir()
 
-    for assignment in assignments:
-        generic_name = assignment.get('Generic Name')
-        if not generic_name:
-            continue
+    file_assignments = process_from_hocr(state)
+    if not file_assignments or len(file_assignments) == 0:
+        print "Assignments didn't work"
+        return
 
-        drug = app.models.Drug.query.filter(
-            app.models.Drug.generic_name == generic_name).first() #should be just 1
-        if not drug: #make drug
-            drug = app.models.Drug(
-                generic_name, assignment.get('Strength'),
-                assignment.get('Form'), assignment.get('Label Name'))
-            app.db.session.add(drug)
-
-        listing = app.models.Listing(
-            effective_date=assignment.get('Date'),
-            smac=get_float_of_value(assignment, 'Current'),
-            ful=get_float_of_value(assignment, 'FUL'),
-            state='IL', drug_id=drug.id)
-        drug.listings.append(listing)
-        app.db.session.add(listing)
-        app.db.session.commit()
-
-# second_files = ['/'.join(f.split('/')[:-1]) + '/' + f.split('/')[-1].strip('1.html') + '2.html' for f in first_files]
+    _process_to_db(file_assignments, state)

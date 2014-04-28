@@ -29,16 +29,20 @@ class Listing(app.db.Model):
     creation_time = app.db.Column(app.db.DateTime)
     ful = app.db.Column(app.db.Float)
     smac = app.db.Column(app.db.Float)
+    proposed = app.db.Column(app.db.Float)
     state = app.db.Column(app.db.String(2), index=True)
     drug_id = app.db.Column(app.db.Integer, app.db.ForeignKey('drug.id'), index=True)
     effective_date = app.db.Column(app.db.DateTime, index=True)
+    file_found = app.db.Column(app.db.Text())
 
-    def __init__(self, smac, effective_date, state, drug_id, ful=None):
+    def __init__(self, smac, effective_date, proposed, state, drug_id, ful, file_found):
         self.smac = smac
         self.effective_date = effective_date
         self.ful = ful
         self.state = state
         self.drug_id = drug_id
+        self.proposed = proposed
+        self.file_found = file_found
         self.creation_time = app.utility.get_time()
 
 class Company(app.db.Model):
