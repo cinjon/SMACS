@@ -19,10 +19,17 @@ def is_missing_column(prev, _next, line):
                 return True, num
     return False, None
 
+list_of_headers = ['State Maximum', 'will be reimbursed', 'Upper Limit', 'Generic Name', 'Multi-Source Brand', 'G _ N Current SMAC', 'Price Effective Date']
+def is_headers(line):
+    line_text = ' '.join([w.txt for w in line])
+    if any([k in line_text for k in list_of_headers]) or app.utility.legible_date_regex.match(line_text):
+        return True
+    return False
+
 def is_part_of_previous_line(name_line, line, columns):
     if len(name_line) == len(line): #most of the time will work
         return True
-    for word in line[len(name_line):]: #smac-list-effective-8-17-10.pdf has notes which flummox the above
+    for word in line[len(name_line):]: #e.g. smac-list-effective-8-17-10.pdf has notes which flummox the above
         try:
             fl = float(word.txt)
             if '.' in word.txt:
@@ -150,13 +157,15 @@ def get_column_bounding_boxes(line, prev_line, next_line):
     columns = []
 
     for word in line:
-        if word.txt in ['N', 't']: #Notes ... if we want to add it later
+        word.txt = word.txt.replace('0', 'O')
+        txt = word.txt
+        if txt in ['N', 't']: #Notes ... if we want to add it later
             continue
-        if word.txt == 'Generic_Name':
+        if txt == 'Generic_Name':
             word.txt = 'Generic Name'
-        elif word.txt == 'Wren':
+        elif txt == 'Wren':
             word.txt = 'Current'
-        elif word.txt.replace('_', '') == 'SMAC':
+        elif txt.replace('_', '') == 'SMAC':
             word.txt = 'SMAC'
         columns.append(app.models.Column(word.txt,
                                          int(word.l), int(word.t),
@@ -255,14 +264,19 @@ def process_generic_page(line_words, drug_start, columns, date):
         start -= 1
     for line in line_words[start:]:
         name = get_generic_name_words(line, columns[1], 0)
-        if len(name) == 0 or app.process.regex.date_regex.match(name[0].txt):
+        if len(name) == 0 or app.process.regex.date_regex.match(name[0].txt) or is_headers(line):
             continue
         if is_part_of_previous_line(name, line, columns):
-            prev_drug_line_name = drug_lines[-1][:len(line_names[-1])]
-            prev_drug_line_name.extend(name)
-            prev_drug_line_name.extend(drug_lines[-1][len(line_names[-1]):])
-            drug_lines[-1] = prev_drug_line_name
-            line_names[-1].extend(name)
+            try:
+                prev_drug_line_name = drug_lines[-1][:len(line_names[-1])]
+                prev_drug_line_name.extend(name)
+                prev_drug_line_name.extend(drug_lines[-1][len(line_names[-1]):])
+                drug_lines[-1] = prev_drug_line_name
+                line_names[-1].extend(name)
+            except Exception, e:
+                print 'exception:'
+                print ' '.join([w.txt for w in name])
+                print ' '.join([w.txt for w in line])
         else:
             line_names.append(name)
             drug_lines.append(line)
@@ -274,12 +288,13 @@ def process(loc, date=None, columns=None, drug_start=None):
 
     line_number, date = get_date_and_line_number(date, line_words)
     if not date:
-        return [], None, None
+        print 'No date in %s' % loc
+        return [], None, None, None
 
     line_number, columns = get_columns_and_line_number(columns, line_number, line_words)
     if not columns:
         print 'No Columns Found: %s' % loc
-        return [], None, None
+        return [], None, None, None
 
     ## We do this everytime because the conversion isn't reliable
     drug_start = get_drug_start(line_words)

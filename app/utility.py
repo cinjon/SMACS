@@ -23,7 +23,9 @@ def datetime_from_proposed(date):
         print e
         return None
 
-legible_date_regex = re.compile("^.*([A-Z][a-z]+)\s+(\d+),\s*(\d+).*$")
+legible_date_regex = re.compile("^.*([A-Z0][a-z]+)\s+(\d+)[,\.]\s*(\d+).*$")
+#the [,\.] is accounting for load.py's price_regex doing a match on the date too.
+
 def datetime_from_legible(date):
     # date: January 17, 2013
     match = legible_date_regex.match(date)
@@ -31,7 +33,7 @@ def datetime_from_legible(date):
         return None
     try:
         groups = match.groups()
-        month = months.index(groups[0].lower().strip()) + 1
+        month = months.index(groups[0].replace('0', 'O').lower().strip()) + 1
         year  = int(groups[2])
         day   = int(groups[1])
         return datetime.date(year, month, day)

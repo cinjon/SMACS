@@ -88,6 +88,8 @@ def get_float_of_value(d, key):
     return None
 
 def _process_to_db(file_assignments, state):
+    failed_listings = {}
+    no_generics = {}
     for f, assignments in file_assignments.iteritems():
         print f
         seen_generic_names = {}
@@ -96,12 +98,13 @@ def _process_to_db(file_assignments, state):
             if not generic_name:
                 print 'No Generic Name for assignment'
                 print assignment
+                if f not in no_generics:
+                    no_generics[f] = []
+                no_generics[f].append(assignment)
                 continue
 
             if generic_name in seen_generic_names:
                 print '%s seen already' % generic_name
-                print seen_generic_names[generic_name]
-                print assignment
                 continue
             seen_generic_names[generic_name] = assignment
 
@@ -125,11 +128,14 @@ def _process_to_db(file_assignments, state):
             except Exception, e:
                 print 'Listing failed'
                 print assignment
-                break
+                if f not in failed_listings:
+                    failed_listings[f] = []
+                failed_listings[f].append(assignment)
+                continue
             drug.listings.append(listing)
             app.db.session.add(listing)
             app.db.session.commit()
-        print '\n'
+    return failed_listings, no_generics
 
 def process_to_db(state):
     if not state:
@@ -141,4 +147,4 @@ def process_to_db(state):
         print "Assignments didn't work"
         return
 
-    _process_to_db(file_assignments, state)
+    return _process_to_db(file_assignments, state)
