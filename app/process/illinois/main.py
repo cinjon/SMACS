@@ -19,7 +19,8 @@ def is_missing_column(prev, _next, line):
                 return True, num
     return False, None
 
-list_of_headers = ['State Maximum', 'will be reimbursed', 'Upper Limit', 'Generic Name', 'Multi-Source Brand', 'G _ N Current SMAC', 'Price Effective Date']
+list_of_headers = ['State Maximum', 'will be reimbursed', 'Upper Limit', 'Generic Name', 'Multi-Source Brand',
+                   'enerlc ame', 'G _ N Current', 'Price Effective Date', '. C t SMAC']
 def is_headers(line):
     line_text = ' '.join([w.txt for w in line])
     if any([k in line_text for k in list_of_headers]) or app.utility.legible_date_regex.match(line_text):
@@ -62,7 +63,7 @@ def get_drug_start(line_words):
 
 def get_effective_date_from_header(line):
     line = ' '.join([word.txt for word in line])
-    return app.utility.datetime_from_legible(line) or app.utility.datetime_from_proposed(line)
+    return app.utility.datetime_from_regex(line)
 
 def get_date_and_line_number(date, line_words):
     line_number = 0

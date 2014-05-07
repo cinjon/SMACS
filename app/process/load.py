@@ -3,11 +3,6 @@ import re
 import os
 from BeautifulSoup import BeautifulSoup
 
-price_regex = re.compile("^([\d*O*\d*]+)[^\d]+([\d*O*]{4,5})$") #so not robust, ugh.
-parens_regex = re.compile("^\(1([\d*0*]{5})$") #sometimes, 0 looks like (1 to ghostscript
-directory = os.path.dirname(os.path.realpath(__file__))
-documents = directory + '/documents'
-
 def _read_file(loc):
     try:
         f = open(loc, 'r')
@@ -60,12 +55,13 @@ def get_line_words(line):
         text = _clean_text(ocr_word.text.strip())
         if text == 'Page': #Page 1 of 1, etc
             break
-        regex = price_regex.match(text)
+        regex = app.process.regex.price_regex.match(text)
         if regex:
             text = '.'.join(regex.groups())
-        elif parens_regex.match(text):
-            text = '0.' + parens_regex.match(text).groups()[0]
-        text = text.replace('O', '0')
+            text = text.replace('O', '0')
+        elif app.process.regex.parens_regex.match(text):
+            text = '0.' + app.process.regex.parens_regex.match(text).groups()[0]
+            text = text.replace('O', '0')
         words.append(app.models.Word(text,
                                      int(bbox['l']), int(bbox['t']),
                                      int(bbox['r']), int(bbox['b'])))
