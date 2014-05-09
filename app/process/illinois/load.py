@@ -13,15 +13,20 @@ def _check_specialty(href):
 
 def files_later_than(date, file_ends):
     ret = []
+    seen = set()
     for file_end in file_ends:
+        if file_end in seen:
+            continue
+        seen.add(file_end)
+
         file_date = app.utility.datetime_from_regex(file_end)
         if not file_date:
             print 'whats up with this file_end? it has no date: %s' % file_end
         elif file_date > date:
-            print 'yeaaah'
             ret.append(file_end)
-        else:
-            print 'NNNNoooo'
+        else: #done.
+            break
+    return ret
 
 def _get_urls(date):
     #returns all urls from illinois smac site after the given date
@@ -37,11 +42,13 @@ def _get_latest_date():
     #get the date from the db
     from sqlalchemy import func
     listing = app.models.Listing
-    most_recent_date = app.db.session.query(func.max(listing.effective_date)).filter(listing.state=='IL').all()[0][0]
+    most_recent_date = app.db.session.query(func.max(listing.effective_date)).filter(listing.state=='IL', listing.proposed != None).all()[0][0]
     return most_recent_date.date()
 
-def download_files():
+def download_files(debug=False):
     date = _get_latest_date()
     urls = _get_urls(date)
+    if debug:
+        return urls
     for url in urls:
         app.process.main.download(url, app.process.illinois.main.documents + '/src')

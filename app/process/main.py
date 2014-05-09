@@ -172,6 +172,7 @@ def download(url, dir, fileName=None):
     r = urllib2.urlopen(urllib2.Request(url))
     try:
         fileName = fileName or getFileName(url,r)
+        print dir + '/' + fileName
         with open(dir + '/' + fileName, 'wb') as f:
             shutil.copyfileobj(r,f)
     finally:

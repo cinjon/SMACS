@@ -27,10 +27,17 @@ def datetime_from_regex(date):
 
     if not match:
         return None
+
     try:
         groups = match.groups()
         if do_index:
-            month = months.index(groups[0].replace('0', 'O').lower().strip()) + 1
+            month = groups[0].replace('0', 'O').lower().strip()
+            if month in months:
+                month = months.index(month) + 1
+            elif month in abbr_months:
+                month = abbr_months.index(month) + 1
+            else:
+                print 'whats up witht his month: %s' % month
         else:
             month = int(groups[0])
         year  = int(groups[2])
