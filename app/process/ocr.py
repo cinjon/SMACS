@@ -23,11 +23,17 @@ def tesseract_png_to_hocr(from_dir, to_dir, name):
                                         to_dir + '/' + name.split('.png')[0])
     subprocess.call(command, shell=True)
 
-def done_file(directory, name):
-    if name == 'done':
-        return
-    done_dir = directory + 'done'
+def _check_done_move_for_done(to_directory, moving_name):
+    if moving_name == 'done':
+        return False
+    done_dir = to_directory + 'done'
     if not os.path.exists(done_dir):
         os.makedirs(done_dir)
+    return done_dir
+
+def done_file(directory, name):
+    done_dir = _check_done_move_for_done(directory, name)
+    if not done_dir:
+        return
     command = 'mv %s %s' % (directory + name, done_dir + '/' + name)
     subprocess.call(command, shell=True)

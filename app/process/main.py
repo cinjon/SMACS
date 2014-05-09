@@ -17,9 +17,32 @@ def get_process_function_from_state(state):
         process = app.process.illinois.main.process
     return process
 
+def is_done_dir(f):
+    dir_name = f.split('/')[-1]
+    return dir_name == '' or dir_name == 'done' or '/done' in f  #top-level || done docs
+
 def download_files_from_state(state):
     if state == 'IL':
         app.process.illinois.load.download_files()
+
+def do_all_processing_for_state(state):
+    try:
+        print 'Downloading files from ' + state
+        download_files_from_state(state)
+        print 'Completed downloading files from ' + state
+        process_from_src_to_hocr(state)
+        print 'Completed downloading files from ' + state
+        failed, no_generics = process_to_db(state)
+        print 'Completed processing to DB for ' + state
+        print '*** Failed Listings ***'
+        print failed
+        print '*** Listings with no generics ***'
+        print no_generics
+        print 'Moving files to /hocr/done'
+        done_hocr(state)
+        print 'Done'
+    except Exception, e:
+        print e
 
 #####
 # Call this with the directory path to take src pdf's to hocr's.
@@ -60,8 +83,7 @@ def process_from_hocr(state):
     directory += '/hocr/'
     master_assignments = {}
     for root, dirs, files in os.walk(directory): #each dir is a diff pdf
-        dir_name = root.split('/')[-1]
-        if dir_name == '' or dir_name == 'done': #top-level || done docs
+        if is_done_dir(root):
             continue
         date = None
         columns = None
@@ -87,6 +109,13 @@ def process_from_hocr(state):
             # app.process.ocr.done_file(root + '/', f)
         master_assignments[root] = assignments
     return master_assignments
+
+def done_hocr(state):
+    directory = get_directory_from_state(state) + '/hocr/'
+    for root, dirs, files in os.walk(directory):
+        if is_done_dir(root):
+            continue
+        app.process.ocr.done_file(directory, root.split('/')[-1])
 
 def get_float_of_value(d, key):
     value = d.get(key)

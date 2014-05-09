@@ -23,7 +23,7 @@ list_of_headers = ['State Maximum', 'will be reimbursed', 'Upper Limit', 'Generi
                    'enerlc ame', 'G _ N Current', 'Price Effective Date', '. C t SMAC']
 def is_headers(line):
     line_text = ' '.join([w.txt for w in line])
-    if any([k in line_text for k in list_of_headers]) or app.utility.legible_date_regex.match(line_text):
+    if any([k in line_text for k in list_of_headers]) or app.process.regex.legible_date_regex.match(line_text):
         return True
     return False
 
