@@ -1,130 +1,51 @@
-body {
-    background-color:#93E6F0;
-    min-height:600px;
-    height: auto !important;
-    height:600px;
+
+.masthead {
+	padding: 30px 0 30px;
+	margin-bottom: 0;
 }
 
-#content {
-    min-height:600px;
-    height:600px
+.masthead h1 {
+	font-size: 75px;
+	line-height: 1;
+	letter-spacing: -2px;
+	font-weight: bold;
 }
 
-div.available {
-    margin-top:3px;
-}
-
-input.inputBoxAvailable {
-    width:15px;
-    height:15px;
-    margin-bottom:5px;
-}
-
-hr.style-one {
-    border: 0;
-    height: 1px;
-    background: #333;
-    background-image: -webkit-linear-gradient(left, #ccc, #333, #ccc);
-    background-image:    -moz-linear-gradient(left, #ccc, #333, #ccc);
-    background-image:     -ms-linear-gradient(left, #ccc, #333, #ccc);
-    background-image:      -o-linear-gradient(left, #ccc, #333, #ccc);
-}
-
-hr.style-two {
-    border: 0;
-    height: 1px;
-    background-image: -webkit-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.75), rgba(0,0,0,0));
-    background-image:    -moz-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.75), rgba(0,0,0,0));
-    background-image:     -ms-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.75), rgba(0,0,0,0));
-    background-image:      -o-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.75), rgba(0,0,0,0));
-}
-
-.box {
-	position: relative;
-	padding: 15px 15px 5px 15px;
-	margin: 0 auto;
-    margin-bottom: 15px;
-	background-color: #fff;
-	-webkit-box-shadow: 0 0 3px rgba(0, 0, 0, 0.2), inset 0 0 1px rgba(0, 0, 0, 0.1);
-	-moz-box-shadow: 0 0 3px rgba(0, 0, 0, 0.2), inset 0 0 1px rgba(0, 0, 0, 0.1);
-	box-shadow: 0 0 3px rgba(0, 0, 0, 0.2), inset 0 0 1px rgba(0, 0, 0, 0.1);
-        width: auto;
-}
-
-h2,h3 {
-    font-weight: 300;
-}
-
-.shadow-box:before, .shadow-box:after
-{
+.header-section {
+	padding: 50px 0;
+	background: #222;
 	position: absolute;
-	width: 40%;
-	height: 10px;
-	content: ' ';
-	left: 22px;
-	bottom: 22px;
-	background: transparent;
-	-webkit-transform: skew(-5deg) rotate(-5deg);
-	-moz-transform: skew(-5deg) rotate(-5deg);
-	-ms-transform: skew(-5deg) rotate(-5deg);
-	-o-transform: skew(-5deg) rotate(-5deg);
-	transform: skew(-5deg) rotate(-5deg);
-	-webkit-box-shadow: 0 10px 18px rgba(0, 0, 0, 0.3);
-	-moz-box-shadow: 0 10px 18px rgba(0, 0, 0, 0.3);
-	box-shadow: 0 10px 18px rgba(0, 0, 0, 0.3);
-	z-index: -1;
+	top: 40px;
+	left: 0px;
+	width: 100%;
+	padding-left: 0;
+	margin-left: 0;
+	color: #FFF;
 }
-.shadow-box:after
-{
-	left: auto;
-	right: 20px;
-	-webkit-transform: skew(5deg) rotate(5deg);
-	-moz-transform: skew(5deg) rotate(5deg);
-	-ms-transform: skew(5deg) rotate(5deg);
-	-o-transform: skew(5deg) rotate(5deg);
-	transform: skew(5deg) rotate(5deg);
+
+.header-row {
+	width: 960px;
+	margin: auto;
 }
-div.well {
-        background-color:#ffffff;
+
+.header-push {
+	height: 250px;
 }
-div.center {
-        margin-left:auto;
-        margin-right:auto;
-        width:25%;
-        background-color:#dceaf4;
-        text-align:center;
-        font-size:15px;
-        border: 1px solid;
+
+.main {
+	padding-top: 20px;
+	min-height: 370px;
 }
-div.left {
-        background-color:#dceaf4;
-        width:126px;
-        border: 1px solid;
-        font-size:15px;
-        text-align:center;
+
+.footer-left {
+	float: left;
 }
-p.mapname {
-        font-size:18px;
-        margin-left:25px
+
+.footer-right {
+	float: right;
 }
-.smallbox {
-          position: relative;
-          padding: 9px 0px 0px 0px;
-          margin: 0 auto;
-          margin-bottom: 8px;
-	background-color: #fff;
-	-webkit-box-shadow: 0 0 3px rgba(0, 0, 0, 0.2), inset 0 0 1px rgba(0, 0, 0, 0.1);
-	-moz-box-shadow: 0 0 3px rgba(0, 0, 0, 0.2), inset 0 0 1px rgba(0, 0, 0, 0.1);
-	box-shadow: 0 0 3px rgba(0, 0, 0, 0.2), inset 0 0 1px rgba(0, 0, 0, 0.1);
-}
-.setbox_39 {
-          position: relative;
-          padding: 0px 0px 0px 0px;
-          margin: 0 auto;
-          margin-bottom: 8px;
-	background-color: #fff;
-	-webkit-box-shadow: 0 0 3px rgba(0, 0, 0, 0.2), inset 0 0 1px rgba(0, 0, 0, 0.1);
-	-moz-box-shadow: 0 0 3px rgba(0, 0, 0, 0.2), inset 0 0 1px rgba(0, 0, 0, 0.1);
-	box-shadow: 0 0 3px rgba(0, 0, 0, 0.2), inset 0 0 1px rgba(0, 0, 0, 0.1);
-        height:39px;
+
+.flashes {
+	list-style-type: none;
+	margin-left: 0;
 }

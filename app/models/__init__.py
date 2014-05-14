@@ -73,3 +73,11 @@ class Column(object):
 
     def contains(self, word):
         return self.r >= word.l and word.r >= self.l
+
+# models for which we want to create API endpoints
+app.flask_app.config['API_MODELS'] = {'listing':Listing, 'drug':Drug}
+
+# models for which we want to create CRUD-style URL endpoints,
+# and pass the routing onto our AngularJS application
+# secretly don't want to do this ... change later.
+app.flask_app.config['CRUD_URL_MODELS'] = {'listing':Listing, 'drug':Drug}
