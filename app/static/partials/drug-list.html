@@ -1,0 +1,4 @@
+<div ng-repeat="drug in drugs | orderBy: 'id':true ">
+  <h4><a href="/drug/{{drug.id}}">{{drug.generic_name}}</a></h4>
+  <p>{{drug.form}}<p>
+</div>

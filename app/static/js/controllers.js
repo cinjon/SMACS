@@ -10,14 +10,17 @@ function AboutController($scope) {
 
 }
 
-function PostListController($scope, Post) {
-  var postsQuery = Post.get({}, function(posts) {
-    $scope.posts = posts.objects;
+function DrugListController($scope, Drug) {
+  console.log('hi in druglist')
+  var drugsQuery = Drug.get({}, function(drugs) {
+    $scope.drugs = drugs.objects;
   });
+  console.log($scope.drugs);
 }
 
-function PostDetailController($scope, $routeParams, Post) {
-  var postQuery = Post.get({ postId: $routeParams.postId }, function(post) {
-    $scope.post = post;
+function DrugDetailController($scope, $routeParams, Drug) {
+  console.log('hi in drug detail');
+  var drugQuery = Drug.get({drugId: $routeParams.drugId}, function(drug) {
+    $scope.drug = drug;
   });
 }

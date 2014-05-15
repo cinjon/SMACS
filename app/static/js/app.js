@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('AngularFlask', ['angularFlaskServices'])
+angular.module('SmacDB', ['smacServices'])
   .config([
     '$routeProvider', '$locationProvider',
     function($routeProvider, $locationProvider) {
@@ -13,6 +13,14 @@ angular.module('AngularFlask', ['angularFlaskServices'])
 	  templateUrl: 'static/partials/about.html',
 	  controller: AboutController
 	})
+        .when('/drug', {
+          templateUrl: 'static/partials/drug-list.html',
+          controller: DrugListController
+        })
+        .when('/drug/:drugId', {
+          templateUrl: '/static/partials/drug-detail.html',
+          controller: DrugDetailController
+        })
 	.otherwise({
 	  redirectTo: '/'
 	});

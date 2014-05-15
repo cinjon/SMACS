@@ -1,11 +1,12 @@
 'use strict';
 
-angular.module('angularFlaskServices', ['ngResource'])
-  .factory('Post', function($resource) {
-    return $resource('/api/post/:postId', {}, {
+angular.module('smacServices', ['ngResource'])
+  .factory('Drug', function($resource) {
+    console.log('hi in asking api for drugId');
+    return $resource('/api/drug/:drugId', {}, {
       query: {
 	method: 'GET',
-	params: { postId: '' },
+	params: {drugId:''},
 	isArray: true
       }
     });
