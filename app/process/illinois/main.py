@@ -107,12 +107,8 @@ def merge_column_names(columns, next_line):
     while(position < len(columns)):
         column = columns[position]
         if position == len(columns) - 1:
-            if column.title == 'SMAC':
-                next_line_words = [w.txt for w in next_line]
-                if 'Effective' in next_line_words:
-                    column.title = 'Effective Date'
-                elif 'Proposed' in next_line_words:
-                    column.title = 'Proposed SMAC'
+            if column.title == 'SMAC' and 'Effective' in [w.txt for w in next_line]:
+                column.title = 'Effective Date'
             elif column.title == 'Current':
                 column.title = 'SMAC'
             ret.append(column)
@@ -123,19 +119,19 @@ def merge_column_names(columns, next_line):
         if column.title == 'Generic' and next_column.title == 'Name':
             new_column = app.models.Column('Generic Name',
                                            column.l, min(column.t, next_column.t),
-                                           column.r, max(column.b, next_column.b))
+                                           next_column.r, max(column.b, next_column.b))
             ret.append(new_column)
             position += 1
         elif column.title == 'Old' and next_column.title == 'SMAC':
             new_column = app.models.Column('Old SMAC',
                                            column.l, min(column.t, next_column.t),
-                                           column.r, max(column.b, next_column.b))
+                                           next_column.r, max(column.b, next_column.b))
             ret.append(new_column)
             position += 1
         elif column.title == 'Label' and next_column.title == 'Name':
             new_column = app.models.Column('Label Name',
                                            column.l, min(column.t, next_column.t),
-                                           column.r, max(column.b, next_column.b))
+                                           next_column.r, max(column.b, next_column.b))
             ret.append(new_column)
             position += 1
         elif column.title == 'Current' or column.title == 'Current.':
@@ -167,6 +163,10 @@ def merge_column_names(columns, next_line):
         else:
             ret.append(column)
         position += 1
+    if len(next_line) == 1 and next_line[0].txt == 'Proposed' and next_line[0].l > columns[-1].r:
+        col = next_line[0]
+        ret.append(app.models.Column('Proposed SMAC',
+                                     col.l, col.t, col.r, col.b))
     return ret
 
 def get_column_bounding_boxes(line, prev_line, next_line):
@@ -261,13 +261,15 @@ def get_drug_information_from_name_words(words):
             return full_name, form.title(), strength
     return full_name, None, strength
 
-def make_drug_line_dicts(names, lines, columns, date):
+def make_drug_line_dicts(specialty_names, generic_names, lines, columns, date):
     ret = []
     for pos, line in enumerate(lines):
-        generic_name, form, strength = get_drug_information_from_name_words(names[pos])
+        generic_name, form, strength = get_drug_information_from_name_words(generic_names[pos])
         assignment = {'Generic Name':generic_name, 'Form':form, 'Strength':strength}
+        if specialty_names[pos]:
+            assignment['Label Name'] = ' '.join([w.txt for w in specialty_names[pos]])
 
-        for word in line[len(names[pos]):]:
+        for word in line[len(generic_names[pos]) + len(specialty_names[pos]):]:
             for column in columns[1:]:
                 if column.contains(word):
                     assignment[column.title] = word.txt
@@ -307,7 +309,7 @@ def process_specialty_page(line_words, drug_start, columns, date):
             specialty_names.append(specialty_name)
             generic_names.append(generic_name)
             drug_lines.append(line)
-    return make_drug_line_dicts(
+    return make_drug_line_dicts(specialty_names, generic_names, drug_lines, columns, date)
 
 def process_proposed_page(line_words, drug_start, columns, date):
     pass
@@ -338,8 +340,7 @@ def process_generic_page(line_words, drug_start, columns, date):
         else:
             line_names.append(name)
             drug_lines.append(line)
-
-    return make_drug_line_dicts(line_names, drug_lines, columns, date)
+    return make_drug_line_dicts([[] for i in range(len(line_names))], line_names, drug_lines, columns, date)
 
 def process(loc, date=None, columns=None, drug_start=None, type_file=None):
     line_words = app.process.load.get_all_line_words(loc)
@@ -360,12 +361,12 @@ def process(loc, date=None, columns=None, drug_start=None, type_file=None):
     if not type_file:
         type_file = get_type_of_file(loc, line_words, drug_start)
 
-    if type_file == 'generic':
+    if type_file == 'generic' or type_file == 'proposed':
         processed = process_generic_page(line_words, drug_start, columns, date)
     elif type_file == 'specialty':
         processed = process_specialty_page(line_words, drug_start, columns, date)
-    elif type_file == 'proposed':
-        processed = process_proposed_page(line_words, drug_start, columns, date)
+    # elif type_file == 'proposed':
+    #     processed = process_proposed_page(line_words, drug_start, columns, date)
     else:
         print 'Wtf? no processed to speak of: %s' % loc
         processed = []

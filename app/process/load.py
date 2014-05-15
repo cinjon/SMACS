@@ -77,7 +77,16 @@ def get_line_words_and_box(line):
         elif app.process.regex.parens_regex.match(text):
             text = '0.' + app.process.regex.parens_regex.match(text).groups()[0]
             text = text.replace('O', '0')
+
+        text = check_for_missing_dot(text)
+
         words.append(app.models.Word(text,
                                      int(bbox['l']), int(bbox['t']),
                                      int(bbox['r']), int(bbox['b'])))
     return words, _get_hocr_bbox(line)
+
+def check_for_missing_dot(text):
+    match = app.process.regex.number_missing_dot_regex.match(text)
+    if match:
+        return match.groups()[0] + '.' + match.groups()[1]
+    return text

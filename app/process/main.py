@@ -96,7 +96,7 @@ def process_from_hocr(state):
                 continue
             absolute_path = root + '/' + f
             try:
-                page_assignments, date, columns, drug_start = _process(absolute_path, date, columns, drug_start, type_file)
+                page_assignments, date, columns, drug_start, type_file = _process(absolute_path, date, columns, drug_start, type_file)
                 if num == 0:
                     drug_start = None
             except Exception, e:

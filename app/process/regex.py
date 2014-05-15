@@ -9,3 +9,4 @@ master_list_date_regex = re.compile("^illinois_master_smac_([a-z]+)_(\d{1,2})_(\
 prop_list_date_regex = re.compile("^proposed-smac-list-effective-(\d+)-(\d+)-(\d+).*")
 legible_date_regex = re.compile("^.*([A-Z0][a-z]+)\s+(\d+)[,\.]\s*(\d+).*$") #the [,\.] is accounting for load.py's price_regex doing a match on the date too.
 proposed_date_regex = re.compile("^.*(\d{2})-(\d{2})-(\d{4}).*$")
+number_missing_dot_regex = re.compile("^.*(\d{2})(\d{5}).*$")
