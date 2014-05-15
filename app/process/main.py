@@ -88,6 +88,7 @@ def process_from_hocr(state):
         date = None
         columns = None
         drug_start = None
+        type_file = None
         assignments = []
         print root
         for num, f in enumerate(files): #this is bad because the file order is wack. be careful
@@ -95,7 +96,7 @@ def process_from_hocr(state):
                 continue
             absolute_path = root + '/' + f
             try:
-                page_assignments, date, columns, drug_start = _process(absolute_path, date, columns, drug_start)
+                page_assignments, date, columns, drug_start = _process(absolute_path, date, columns, drug_start, type_file)
                 if num == 0:
                     drug_start = None
             except Exception, e:

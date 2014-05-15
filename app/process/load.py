@@ -20,8 +20,8 @@ def soup_ocr(loc=None):
     soup = soup_file(loc)
     return soup.findAll('span', {'class':'ocr_line'})
 
-def _get_word_bbox(word):
-    title = word['title']
+def _get_hocr_bbox(hocr):
+    title = hocr['title']
     parts = title.split(' ')
     if len(parts) < 5:
         return None
@@ -40,14 +40,29 @@ def _clean_text(text):
         text = text.replace('ELIXIR', 'ELIXIR ')
     return text
 
-def get_line_words(line):
+def get_all_line_words(loc):
+    line_words = []
+    prev_bbox = None
+    #If two line_boxes have the same top, then combine those lines. They should be consecutive
+    for line in app.process.load.soup_ocr(loc):
+        words, bbox = app.process.load.get_line_words_and_box(line)
+        if not prev_bbox:
+            line_words.append(words)
+        elif prev_bbox['t'] == bbox['t']:
+            line_words[-1].extend(words)
+        else:
+            line_words.append(words)
+        prev_bbox = bbox
+    return line_words
+
+def get_line_words_and_box(line):
     ocr_words = line.findAll('span', {'class':'ocrx_word'})
     words = []
     for ocr_word in ocr_words:
         contents = ocr_word.contents
         if len(contents) == 0:
             continue
-        bbox = _get_word_bbox(ocr_word)
+        bbox = _get_hocr_bbox(ocr_word)
         if not bbox:
             print 'This word has a bad box: %s' % ocr_word
             continue
@@ -65,4 +80,4 @@ def get_line_words(line):
         words.append(app.models.Word(text,
                                      int(bbox['l']), int(bbox['t']),
                                      int(bbox['r']), int(bbox['b'])))
-    return words
+    return words, _get_hocr_bbox(line)

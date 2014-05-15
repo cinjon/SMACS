@@ -27,7 +27,7 @@ def is_headers(line):
         return True
     return False
 
-def is_part_of_previous_line(name_line, line, columns):
+def is_part_of_previous_line(name_line, line):
     if len(name_line) == len(line): #most of the time will work
         return True
     for word in line[len(name_line):]: #e.g. smac-list-effective-8-17-10.pdf has notes which flummox the above
@@ -85,6 +85,21 @@ def get_columns_and_line_number(columns, line_number, line_words):
                 columns = get_column_bounding_boxes(line, line_words[line_number-1], line_words[line_number+1])
                 break
     return line_number, columns
+
+def get_start_of_generic(drug_lines):
+    lefts = [w.l for w in drug_lines]
+
+def get_type_of_file(loc, line_words, drug_start):
+    if 'proposed' in loc:
+        return 'proposed'
+    elif 'specialty' in loc:
+        return 'specialty'
+
+    for line in line_words[:drug_start]:
+        line_text = ' '.join([w.txt for w in line]).lower()
+        if 'generic' in line_text:
+            return 'generic'
+    return 'unknown type'
 
 def merge_column_names(columns, next_line):
     ret = []
@@ -193,6 +208,10 @@ def get_generic_name_words(line, next_column, len_label_words=0):
         position += 1
     return line[len_label_words:position]
 
+def get_specialty_name_words(line):
+    generic_start_left = 1090 #it's really 1100, but we put a buffer jjjjjust in case
+    return [word for word in line if word.l < generic_start_left]
+
 def get_label_name_words(line, next_column):
     position = 0
     while(position < len(line)):
@@ -257,21 +276,59 @@ def make_drug_line_dicts(names, lines, columns, date):
         ret.append(assignment)
     return ret
 
+def process_specialty_page(line_words, drug_start, columns, date):
+    specialty_names = []
+    generic_names = []
+    drug_lines = []
+
+    for line in line_words[drug_start:]:
+        specialty_name = get_specialty_name_words(line)
+        if len(specialty_name) == 0 or app.process.regex.date_regex.match(specialty_name[0].txt) or is_headers(line):
+            continue
+
+        generic_name = get_generic_name_words(line, columns[2], len(specialty_name))
+        names_of_line = []
+        names_of_line.extend(specialty_name)
+        names_of_line.extend(generic_name)
+
+        if is_part_of_previous_line(names_of_line, line):
+            try:
+                prev_specialty_name = specialty_names[-1]
+                prev_generic_name = generic_names[-1]
+                drug_lines[-1] = prev_specialty_name + specialty_name + prev_generic_name + generic_name + drug_lines[-1][len(prev_specialty_name) + len(prev_generic_name):]
+                generic_names[-1].extend(generic_name)
+                specialty_names[-1].extend(specialty_name)
+            except Exception, e:
+                print 'exception:'
+                print ' '.join([w.txt for w in line])
+                print ' '.join([w.txt for w in specialty_name])
+                print ' '.join([w.txt for w in generic_name])
+        else:
+            specialty_names.append(specialty_name)
+            generic_names.append(generic_name)
+            drug_lines.append(line)
+    return make_drug_line_dicts(
+
+def process_proposed_page(line_words, drug_start, columns, date):
+    pass
+
+#TODO: Refactor the shit out of this.
 def process_generic_page(line_words, drug_start, columns, date):
     line_names = []
     drug_lines = []
-    start = drug_start
-    if len(get_generic_name_words(line_words[drug_start], columns[1], 0)) == len(line_words[drug_start]):
-        start -= 1
-    for line in line_words[start:]:
-        name = get_generic_name_words(line, columns[1], 0)
+
+    if len(get_generic_name_words(line_words[drug_start], columns[1])) == len(line_words[drug_start]):
+        #why did we do this? i don't even...
+        drug_start -= 1
+    for line in line_words[drug_start:]:
+        name = get_generic_name_words(line, columns[1])
         if len(name) == 0 or app.process.regex.date_regex.match(name[0].txt) or is_headers(line):
             continue
-        if is_part_of_previous_line(name, line, columns):
+        if is_part_of_previous_line(name, line):
             try:
-                prev_drug_line_name = drug_lines[-1][:len(line_names[-1])]
-                prev_drug_line_name.extend(name)
-                prev_drug_line_name.extend(drug_lines[-1][len(line_names[-1]):])
+                prev_drug_line_name = drug_lines[-1][:len(line_names[-1])] #prev generic_name
+                prev_drug_line_name.extend(name) #add on this generic_name
+                prev_drug_line_name.extend(drug_lines[-1][len(line_names[-1]):]) #add on rest of line
                 drug_lines[-1] = prev_drug_line_name
                 line_names[-1].extend(name)
             except Exception, e:
@@ -282,10 +339,10 @@ def process_generic_page(line_words, drug_start, columns, date):
             line_names.append(name)
             drug_lines.append(line)
 
-    return make_drug_line_dicts(line_names, drug_lines, columns, date), date, columns, drug_start
+    return make_drug_line_dicts(line_names, drug_lines, columns, date)
 
-def process(loc, date=None, columns=None, drug_start=None):
-    line_words = [app.process.load.get_line_words(line) for line in app.process.load.soup_ocr(loc)]
+def process(loc, date=None, columns=None, drug_start=None, type_file=None):
+    line_words = app.process.load.get_all_line_words(loc)
 
     line_number, date = get_date_and_line_number(date, line_words)
     if not date:
@@ -300,4 +357,17 @@ def process(loc, date=None, columns=None, drug_start=None):
     ## We do this everytime because the conversion isn't reliable
     drug_start = get_drug_start(line_words)
 
-    return process_generic_page(line_words, drug_start, columns, date)
+    if not type_file:
+        type_file = get_type_of_file(loc, line_words, drug_start)
+
+    if type_file == 'generic':
+        processed = process_generic_page(line_words, drug_start, columns, date)
+    elif type_file == 'specialty':
+        processed = process_specialty_page(line_words, drug_start, columns, date)
+    elif type_file == 'proposed':
+        processed = process_proposed_page(line_words, drug_start, columns, date)
+    else:
+        print 'Wtf? no processed to speak of: %s' % loc
+        processed = []
+
+    return processed, date, columns, drug_start, type_file
