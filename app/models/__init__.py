@@ -9,8 +9,8 @@ drugs = app.db.Table(
 class Drug(app.db.Model):
     id = app.db.Column(app.db.Integer, primary_key=True)
     creation_time = app.db.Column(app.db.DateTime)
-    label_name = app.db.Column(app.db.Text())
-    generic_name = app.db.Column(app.db.Text(), index=True, unique=True)
+    label_name = app.db.Column(app.db.Text(), index=True)
+    generic_name = app.db.Column(app.db.Text(), index=True)
     strength = app.db.Column(app.db.String(25))
     form = app.db.Column(app.db.String(25))
     companies = app.db.relationship('Company', secondary=drugs,

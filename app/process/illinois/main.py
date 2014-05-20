@@ -46,7 +46,7 @@ def get_drug_start(line_words):
         for txt in txts:
             try:
                 fl = float(txt)
-                if '.' in txt:
+                if '.' in txt and not any([month in txts for month in app.utility.months]):
                     float_check = True
                     break
             except Exception, e:
@@ -75,14 +75,15 @@ def get_date_and_line_number(date, line_words):
             line_number += 1
     return line_number, date
 
-def get_columns_and_line_number(columns, line_number, line_words):
+def get_columns_and_line_number(columns, line_number, line_words, type_file):
     if not columns:
         while(line_number < 10):
             line_number += 1
             line = line_words[line_number]
             line_text = [w.txt for w in line]
-            if 'Generic_Name' in line_text or ('Generic' in line_text and 'Name' in line_text):
-                columns = get_column_bounding_boxes(line, line_words[line_number-1], line_words[line_number+1])
+            if 'Generic_Name' in line_text or ('Generic' in line_text and 'Name' in line_text) or ('L' in line_text and 'b' in line_text and 'G' in line_text):
+                #last clause is because some of the specialtys get really fucked up
+                columns = get_column_bounding_boxes(line, line_words[line_number-1], line_words[line_number+1], type_file)
                 break
     return line_number, columns
 
@@ -92,8 +93,8 @@ def get_start_of_generic(drug_lines):
 def get_type_of_file(loc, line_words, drug_start):
     if 'proposed' in loc:
         return 'proposed'
-    elif 'specialty' in loc:
-        return 'specialty'
+    elif 'special' in loc:
+        return 'label'
 
     for line in line_words[:drug_start]:
         line_text = ' '.join([w.txt for w in line]).lower()
@@ -101,7 +102,7 @@ def get_type_of_file(loc, line_words, drug_start):
             return 'generic'
     return 'unknown type'
 
-def merge_column_names(columns, next_line):
+def merge_column_names(columns, next_line, type_file):
     ret = []
     position = 0
     while(position < len(columns)):
@@ -111,6 +112,8 @@ def merge_column_names(columns, next_line):
                 column.title = 'Effective Date'
             elif column.title == 'Current':
                 column.title = 'SMAC'
+            elif column.title =='SMAC' and type_file == 'proposed':
+                column.title = 'Proposed SMAC'
             ret.append(column)
             position += 1
             continue
@@ -165,12 +168,18 @@ def merge_column_names(columns, next_line):
         position += 1
     if len(next_line) == 1 and next_line[0].txt == 'Proposed' and next_line[0].l > columns[-1].r:
         col = next_line[0]
-        ret.append(app.models.Column('Proposed SMAC',
-                                     col.l, col.t, col.r, col.b))
+        ret.append(app.models.Column('Proposed SMAC', col.l, col.t, col.r, col.b))
     return ret
 
-def get_column_bounding_boxes(line, prev_line, next_line):
+def get_column_bounding_boxes(line, prev_line, next_line, type_file, debug=False):
     columns = []
+
+    if ' '.join([w.txt for w in line]) == 'L b I N G _ N Old SMAC Current SMAC':
+        label_word = app.models.Word('Label Name', line[0].l, line[0].t, line[3].r, next_line[0].b)
+        generic_word = app.models.Word('Generic Name', line[4].l, line[4].t, line[6].r, next_line[0].b)
+        temp = line[7:]
+        line = [label_word, generic_word]
+        line.extend(temp)
 
     for word in line:
         word.txt = word.txt.replace('0', 'O')
@@ -197,7 +206,9 @@ def get_column_bounding_boxes(line, prev_line, next_line):
                               min(int(prev.l), int(_next.l)), int(prev.t),
                               max(int(prev.r), int(_next.r)), int(_next.b))
             ] + columns[column:]
-    return merge_column_names(columns, next_line)
+    if debug:
+        return columns
+    return merge_column_names(columns, next_line, type_file)
 
 def get_generic_name_words(line, next_column, len_label_words=0):
     position = len_label_words
@@ -208,18 +219,9 @@ def get_generic_name_words(line, next_column, len_label_words=0):
         position += 1
     return line[len_label_words:position]
 
-def get_specialty_name_words(line):
+def get_label_name_words(line):
     generic_start_left = 1090 #it's really 1100, but we put a buffer jjjjjust in case
     return [word for word in line if word.l < generic_start_left]
-
-def get_label_name_words(line, next_column):
-    position = 0
-    while(position < len(line)):
-        word = line[position]
-        if word.r >= 1100:
-            break
-        position += 1
-    return line[:position]
 
 def get_strength_of_drug(name):
     match = app.process.regex.dose_regex.match(name)
@@ -240,7 +242,7 @@ def get_strength_of_drug(name):
 def get_title_of_drug(line):
     return ' '.join([w.txt for w in line])
 
-def get_generic_name_for_specialty_drug(words, column):
+def get_generic_name_for_label_drug(words, column):
     ret = []
     word = 0
     while(words[word].r < column.l):
@@ -261,15 +263,15 @@ def get_drug_information_from_name_words(words):
             return full_name, form.title(), strength
     return full_name, None, strength
 
-def make_drug_line_dicts(specialty_names, generic_names, lines, columns, date):
+def make_drug_line_dicts(label_names, generic_names, lines, columns, date):
     ret = []
     for pos, line in enumerate(lines):
         generic_name, form, strength = get_drug_information_from_name_words(generic_names[pos])
         assignment = {'Generic Name':generic_name, 'Form':form, 'Strength':strength}
-        if specialty_names[pos]:
-            assignment['Label Name'] = ' '.join([w.txt for w in specialty_names[pos]])
+        if label_names[pos]:
+            assignment['Label Name'] = ' '.join([w.txt for w in label_names[pos]])
 
-        for word in line[len(generic_names[pos]) + len(specialty_names[pos]):]:
+        for word in line[len(generic_names[pos]) + len(label_names[pos]):]:
             for column in columns[1:]:
                 if column.contains(word):
                     assignment[column.title] = word.txt
@@ -278,38 +280,38 @@ def make_drug_line_dicts(specialty_names, generic_names, lines, columns, date):
         ret.append(assignment)
     return ret
 
-def process_specialty_page(line_words, drug_start, columns, date):
-    specialty_names = []
+def process_label_page(line_words, drug_start, columns, date):
+    label_names = []
     generic_names = []
     drug_lines = []
 
     for line in line_words[drug_start:]:
-        specialty_name = get_specialty_name_words(line)
-        if len(specialty_name) == 0 or app.process.regex.date_regex.match(specialty_name[0].txt) or is_headers(line):
+        label_name = get_label_name_words(line)
+        if len(label_name) == 0 or app.process.regex.date_regex.match(label_name[0].txt) or is_headers(line):
             continue
 
-        generic_name = get_generic_name_words(line, columns[2], len(specialty_name))
+        generic_name = get_generic_name_words(line, columns[2], len(label_name))
         names_of_line = []
-        names_of_line.extend(specialty_name)
+        names_of_line.extend(label_name)
         names_of_line.extend(generic_name)
 
         if is_part_of_previous_line(names_of_line, line):
             try:
-                prev_specialty_name = specialty_names[-1]
+                prev_label_name = label_names[-1]
                 prev_generic_name = generic_names[-1]
-                drug_lines[-1] = prev_specialty_name + specialty_name + prev_generic_name + generic_name + drug_lines[-1][len(prev_specialty_name) + len(prev_generic_name):]
+                drug_lines[-1] = prev_label_name + label_name + prev_generic_name + generic_name + drug_lines[-1][len(prev_label_name) + len(prev_generic_name):]
                 generic_names[-1].extend(generic_name)
-                specialty_names[-1].extend(specialty_name)
+                label_names[-1].extend(label_name)
             except Exception, e:
                 print 'exception:'
-                print ' '.join([w.txt for w in line])
-                print ' '.join([w.txt for w in specialty_name])
-                print ' '.join([w.txt for w in generic_name])
+                print 'line: %s' % ' '.join([w.txt for w in line])
+                print 'label: %s' % ' '.join([w.txt for w in label_name])
+                print 'generic: %s' % ' '.join([w.txt for w in generic_name])
         else:
-            specialty_names.append(specialty_name)
+            label_names.append(label_name)
             generic_names.append(generic_name)
             drug_lines.append(line)
-    return make_drug_line_dicts(specialty_names, generic_names, drug_lines, columns, date)
+    return make_drug_line_dicts(label_names, generic_names, drug_lines, columns, date)
 
 def process_proposed_page(line_words, drug_start, columns, date):
     pass
@@ -350,23 +352,21 @@ def process(loc, date=None, columns=None, drug_start=None, type_file=None):
         print 'No date in %s' % loc
         return [], None, None, None
 
-    line_number, columns = get_columns_and_line_number(columns, line_number, line_words)
-    if not columns:
-        print 'No Columns Found: %s' % loc
-        return [], None, None, None
-
     ## We do this everytime because the conversion isn't reliable
     drug_start = get_drug_start(line_words)
 
     if not type_file:
         type_file = get_type_of_file(loc, line_words, drug_start)
 
+    line_number, columns = get_columns_and_line_number(columns, line_number, line_words, type_file)
+    if not columns:
+        print 'No Columns Found: %s' % loc
+        return [], None, None, None
+
     if type_file == 'generic' or type_file == 'proposed':
         processed = process_generic_page(line_words, drug_start, columns, date)
-    elif type_file == 'specialty':
-        processed = process_specialty_page(line_words, drug_start, columns, date)
-    # elif type_file == 'proposed':
-    #     processed = process_proposed_page(line_words, drug_start, columns, date)
+    elif type_file == 'label':
+        processed = process_label_page(line_words, drug_start, columns, date)
     else:
         print 'Wtf? no processed to speak of: %s' % loc
         processed = []

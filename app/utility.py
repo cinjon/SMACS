@@ -17,7 +17,7 @@ def datetime_from_regex(date):
     regexes = app.process.regex
 
     #These two have the explicit months in them
-    match = regexes.legible_date_regex.match(date) or regexes.master_list_date_regex.match(date)
+    match = regexes.legible_date_regex.match(date) or regexes.master_list_date_regex.match(date) or regexes.master_specialty_list_date_regex.match(date)
     do_index = True
 
     if not match:

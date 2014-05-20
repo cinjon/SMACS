@@ -130,6 +130,7 @@ def _process_to_db(file_assignments, state):
     for f, assignments in file_assignments.iteritems():
         print f
         seen_generic_names = {}
+        seen_label_names = {}
         for assignment in assignments:
             generic_name = assignment.get('Generic Name')
             if not generic_name:
@@ -140,17 +141,27 @@ def _process_to_db(file_assignments, state):
                 no_generics[f].append(assignment)
                 continue
 
-            if generic_name in seen_generic_names:
-                print '%s seen already' % generic_name
-                continue
-            seen_generic_names[generic_name] = assignment
+            label_name = assignment.get('Label Name')
+            if label_name:
+                seen_assignments = seen_label_names.get(label_name, [])
+                if any([seen_assignment.get('Generic Name') == generic_name for seen_assignment in seen_assignments]):
+                    print 'Label Name %s seen already with Generic: %s' % (label_name, generic_name)
+                    continue
+                seen_assignments.append(assignment)
+                seen_label_names[label_name] = seen_assignments
+            else:
+                if generic_name in seen_generic_names:
+                    print '%s seen already' % generic_name
+                    continue
+                seen_generic_names[generic_name] = assignment
 
             drug = app.models.Drug.query.filter(
-                app.models.Drug.generic_name == generic_name).first() #should be just 1
+                app.models.Drug.generic_name == generic_name,
+                app.models.Drug.label_name == label_name).first() #should be just 1
             if not drug: #make drug
                 drug = app.models.Drug(
                     generic_name, assignment.get('Strength'),
-                    assignment.get('Form'), assignment.get('Label Name'))
+                    assignment.get('Form'), label_name)
                 app.db.session.add(drug)
 
             try:
