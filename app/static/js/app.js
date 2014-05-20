@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('SmacDB', ['smacServices'])
+angular.module('SmacDB', ['smacServices', 'ngResource'])
   .config([
     '$routeProvider', '$locationProvider',
     function($routeProvider, $locationProvider) {

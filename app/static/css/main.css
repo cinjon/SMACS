@@ -3,11 +3,9 @@
     margin-bottom: 0;
 }
 
-.masthead h1 {
-    font-size: 75px;
+.masthead p {
     line-height: 1;
-    letter-spacing: -2px;
-    font-weight: bold;
+    text-align: center;
 }
 
 .header-section {
@@ -28,12 +26,15 @@
 }
 
 .header-push {
-    height: 250px;
+    height: 394px;
+    background-color: rgba(91, 194, 207, .5);
+    border:2px solid rgba(255,255,255,.5);
+    border-radius:25px;
 }
 
 .main {
     padding-top: 20px;
-    min-height: 370px;
+    min-height: 610px;
 }
 
 .footer-left {
@@ -47,4 +48,12 @@
 .flashes {
     list-style-type: none;
     margin-left: 0;
+}
+
+input.ng-dirty.ng-valid {
+    border-color: green;
+}
+
+input.ng-dirty.ng-invalid {
+    border-color: red;
 }
