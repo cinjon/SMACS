@@ -1,13 +1,81 @@
 import app
+from flask.ext.security import UserMixin, RoleMixin
+from flask.ext.security.utils import verify_and_update_password
 
-# class User(app.db.Model, UserMixin):
-#     id = app.db.Column(app.db.Integer, primary_key=True)
+ROLE_USER = 0
+ROLE_ADMIN = 1
+ROLE_TEST = 2
+
+roles_users = db.Table(
+    'roles_users',
+    db.Column('smac_user_id', db.Integer(), db.ForeignKey('smac_user.id')),
+    db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
 
 drugs = app.db.Table(
     'drugs',
     app.db.Column('drug_id', app.db.Integer, app.db.ForeignKey('drug.id')),
     app.db.Column('company_id', app.db.Integer, app.db.ForeignKey('company.id'))
 )
+
+class Role(app.db.Model, RoleMixin):
+    id = app.db.Column(db.Integer(), primary_key=True)
+    name = app.db.Column(db.String(80), unique=True)
+    description = app.db.Column(db.String(255))
+
+class SmacUser(app.db.Model, UserMixin):
+    id = app.db.Column(app.db.Integer, primary_key=True)
+    contact_name = app.db.Column(app.db.String(120))
+    email = app.db.Column(app.db.String(120), unique=True, index=True) #Required
+    password = app.db.Column(app.db.String(120)) #Required
+    active = app.db.Column(app.db.Boolean())
+    creation_time = app.db.Column(app.db.DateTime)
+    last_login_at = app.db.Column(app.db.DateTime())
+    current_login_at = app.db.Column(app.db.DateTime())
+    last_login_ip = app.db.Column(app.db.String(100))
+    current_login_ip = app.db.Column(app.db.String(100))
+    login_count = app.db.Column(app.db.Integer)
+    confirmed_at = app.db.Column(app.db.DateTime())
+    roles = app.db.relationship('Role', secondary=roles_users,
+                                backref=app.db.backref('users', lazy='dynamic'))
+
+    def __init__(self, contact_name, email, password, roles, active):
+        self.email = email
+        self.contact_name = contact_name
+        self.active = active
+        self.password = password
+        self.creation_time = app.utility.get_time()
+        self.roles = roles
+
+    def is_authenticated(self):
+        #Can the user be logged in in general?
+        return True
+
+    def is_active(self):
+        #Is this an active account or perhaps banned?
+        return True
+
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return unicode(self.id)
+
+    def check_password(self, password):
+        return verify_and_update_password(password, self)
+
+def try_login(email, password, remember_me=True, xhr=False):
+    u = user_with_email(email)
+    if u and authenticate(u, password):
+        session.pop('remember_me', None)
+        login_user(u, remember=remember_me)
+        if xhr:
+            return app.utility.xhr_user_login(u, True)
+    elif xhr:
+        return app.utility.xhr_user_login(u, False)
+    return app.views.index.go_to_index()
+
+def authenticate(u, password):
+    return u.check_password(password)
 
 class Drug(app.db.Model):
     id = app.db.Column(app.db.Integer, primary_key=True)
