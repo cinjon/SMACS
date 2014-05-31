@@ -9,12 +9,17 @@ angular.module('typeahead', [])
     }
   })
   .controller('typeaheadController', function($scope, dataFactory) { // DI in action
-    dataFactory.get('static/states.json').then(function(data) {
+    // Get the parent scope and put parent.$scope.items here as $scope.items
+    // Instead of using dataFactory that is.
+    // Do the same for parent.$scope.hideChoices
+    $scope.displayLimit = 3;
+    dataFactory.get('static/drugTestLimit.json').then(function(data) {
       $scope.items = data;
     });
     $scope.name = ''; // This will hold the selected item
     $scope.onItemSelected = function() { // this gets executed when an item is selected
-      console.log('selected=' + $scope.name);
+      console.log('url = ' + $scope.url);
+      console.log('selected =' + $scope.name);
     };
   })
   .directive('typeahead', function($timeout) {
@@ -25,6 +30,7 @@ angular.module('typeahead', [])
         prompt: '@',
         title: '@',
         subtitle: '@',
+        id: '@',
         model: '=',
         onSelect: '&'
       },
@@ -38,7 +44,6 @@ angular.module('typeahead', [])
           }, 200);
         };
         scope.current = 0;
-        scope.selected = true; // hides the list initially
         scope.isCurrent = function(index) {
           return scope.current == index;
         };
