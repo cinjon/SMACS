@@ -1,0 +1,44 @@
+<!-- If you're logged in, this is the page you see at / -->
+<!-- Until I hook that functionality up, putting this at /home -->
+
+<div class="row">
+  <div class="col-md-4">
+    <p class="home-headline">
+      Subscriptions
+    </p>
+  </div>
+</div>
+<div class="row">
+  <table>
+    <tr>
+      <th>Subscription</th>
+      <th>Price</th>
+      <th>Date</th>
+    </tr>
+    <tr ng-repeat="subscription in subscriptions track by $index" ng-click="handleSubscription(item)">
+      <td>{{subscription[name]}}</td>
+      <td>{{subscription[price]}}</td>
+      <td>{{subscription[date]}}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="row">
+  <div class="col-md-4">
+    <div ng-controller="typeaheadController">
+      <typeahead items="items" prompt="Search Generic Drugs" title="generic_name" subtitle="strength_and_form" model="name" on-select="onItemSelected()" id="search_generic" hideChoices="hideChoices" />
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div ng-controller="typeaheadController">
+      <typeahead items="items" prompt="Search Label Drugs" title="generic_name" subtitle="strength_and_form" model="name" on-select="onItemSelected()" />
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div ng-controller="typeaheadController">
+      <typeahead items="items" prompt="Search Companies" title="name" subtitle="abbreviation" model="name" on-select="onItemSelected()" />
+    </div>
+  </div>
+</div>

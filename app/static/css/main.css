@@ -50,10 +50,51 @@
     margin-left: 0;
 }
 
-input.ng-dirty.ng-valid {
+.login-input.ng-dirty.ng-valid {
     border-color: green;
 }
 
-input.ng-dirty.ng-invalid {
+.login-input.ng-dirty.ng-invalid {
     border-color: red;
+}
+
+.active {
+  background-color: #C44741;
+  color: #f2f2f2;
+}
+
+.home-headline {
+    padding: 10px;
+    font-size: 18px;
+    margin: 20px 0 0 0;
+    border: 2px solid rgba(91, 194, 207, .5);
+    outline: none;
+    text-align:center;
+}
+
+.typeahead-input {
+    border-radius: 20px;
+    width:100%;
+}
+
+.item {
+    width: 100%;
+    margin: auto;
+    text-align: left;
+    margin-top: 10px;
+    background: #d9edf7;
+    color: black;
+    padding: 10px;
+    box-shadow: 0px 0px 5px #CCC;
+    cursor: pointer;
+}
+
+.item.title{
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.subtitle{
+    font-size: 14px;
+    color: #444;
 }

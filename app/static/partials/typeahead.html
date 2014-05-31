@@ -1,0 +1,11 @@
+<input type="text" class="home-headline typeahead-input" ng-model="model" id="{{id}}_input" placeholder="{{prompt}}" ng-keydown="selected=false"/>
+<br/>
+
+<div class="items" ng-hide="{{hideChoices}}">
+  <!-- TODO: Limit the query results to 5 -->
+  <!-- TODO: Make the query results smarter -->
+  <div class="item" ng-repeat="item in items | filter:model track by $index | limitTo:3" ng-click="handleSelection(item[title])" ng-class="{active:isCurrent($index)}" ng-mouseenter="setCurrent($index)">
+    <p class="title">{{item[title]}}</p>
+    <p class="subtitle">{{item[subtitle]}}</p>
+  </div>
+</div>
