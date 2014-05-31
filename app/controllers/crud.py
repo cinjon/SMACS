@@ -12,7 +12,6 @@ crud_url_models = app.flask_app.config['CRUD_URL_MODELS']
 @app.flask_app.route('/<model_name>/<item_id>')
 def rest_pages(model_name, item_id=None):
     model_class = crud_url_models.get(model_name)
-    print 'in rest_pages'
     if not model_class:
         abort(404)
     if item_id is None or session.query(
