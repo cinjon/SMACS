@@ -1,15 +1,15 @@
 import app
-from flask.ext.security import UserMixin, RoleMixin
-from flask.ext.security.utils import verify_and_update_password
+# from flask.ext.security import UserMixin, RoleMixin
+# from flask.ext.security.utils import verify_and_update_password
 
 ROLE_USER = 0
 ROLE_ADMIN = 1
 ROLE_TEST = 2
 
-roles_users = db.Table(
-    'roles_users',
-    db.Column('smac_user_id', db.Integer(), db.ForeignKey('smac_user.id')),
-    db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+# roles_users = app.db.Table(
+#     'roles_users',
+#     app.db.Column('smac_user_id', app.db.Integer(), app.db.ForeignKey('smac_user.id')),
+#     app.db.Column('role_id', app.db.Integer(), app.db.ForeignKey('role.id')))
 
 drugs = app.db.Table(
     'drugs',
@@ -17,51 +17,51 @@ drugs = app.db.Table(
     app.db.Column('company_id', app.db.Integer, app.db.ForeignKey('company.id'))
 )
 
-class Role(app.db.Model, RoleMixin):
-    id = app.db.Column(db.Integer(), primary_key=True)
-    name = app.db.Column(db.String(80), unique=True)
-    description = app.db.Column(db.String(255))
+# class Role(app.db.Model, RoleMixin):
+#     id = app.db.Column(db.Integer(), primary_key=True)
+#     name = app.db.Column(db.String(80), unique=True)
+#     description = app.db.Column(db.String(255))
 
-class SmacUser(app.db.Model, UserMixin):
-    id = app.db.Column(app.db.Integer, primary_key=True)
-    contact_name = app.db.Column(app.db.String(120))
-    email = app.db.Column(app.db.String(120), unique=True, index=True) #Required
-    password = app.db.Column(app.db.String(120)) #Required
-    active = app.db.Column(app.db.Boolean())
-    creation_time = app.db.Column(app.db.DateTime)
-    last_login_at = app.db.Column(app.db.DateTime())
-    current_login_at = app.db.Column(app.db.DateTime())
-    last_login_ip = app.db.Column(app.db.String(100))
-    current_login_ip = app.db.Column(app.db.String(100))
-    login_count = app.db.Column(app.db.Integer)
-    confirmed_at = app.db.Column(app.db.DateTime())
-    roles = app.db.relationship('Role', secondary=roles_users,
-                                backref=app.db.backref('users', lazy='dynamic'))
+# class SmacUser(app.db.Model, UserMixin):
+#     id = app.db.Column(app.db.Integer, primary_key=True)
+#     contact_name = app.db.Column(app.db.String(120))
+#     email = app.db.Column(app.db.String(120), unique=True, index=True) #Required
+#     password = app.db.Column(app.db.String(120)) #Required
+#     active = app.db.Column(app.db.Boolean())
+#     creation_time = app.db.Column(app.db.DateTime)
+#     last_login_at = app.db.Column(app.db.DateTime())
+#     current_login_at = app.db.Column(app.db.DateTime())
+#     last_login_ip = app.db.Column(app.db.String(100))
+#     current_login_ip = app.db.Column(app.db.String(100))
+#     login_count = app.db.Column(app.db.Integer)
+#     confirmed_at = app.db.Column(app.db.DateTime())
+#     roles = app.db.relationship('Role', secondary=roles_users,
+#                                 backref=app.db.backref('users', lazy='dynamic'))
 
-    def __init__(self, contact_name, email, password, roles, active):
-        self.email = email
-        self.contact_name = contact_name
-        self.active = active
-        self.password = password
-        self.creation_time = app.utility.get_time()
-        self.roles = roles
+#     def __init__(self, contact_name, email, password, roles, active):
+#         self.email = email
+#         self.contact_name = contact_name
+#         self.active = active
+#         self.password = password
+#         self.creation_time = app.utility.get_time()
+#         self.roles = roles
 
-    def is_authenticated(self):
-        #Can the user be logged in in general?
-        return True
+#     def is_authenticated(self):
+#         #Can the user be logged in in general?
+#         return True
 
-    def is_active(self):
-        #Is this an active account or perhaps banned?
-        return True
+#     def is_active(self):
+#         #Is this an active account or perhaps banned?
+#         return True
 
-    def is_anonymous(self):
-        return False
+#     def is_anonymous(self):
+#         return False
 
-    def get_id(self):
-        return unicode(self.id)
+#     def get_id(self):
+#         return unicode(self.id)
 
-    def check_password(self, password):
-        return verify_and_update_password(password, self)
+#     def check_password(self, password):
+#         return verify_and_update_password(password, self)
 
 def try_login(email, password, remember_me=True, xhr=False):
     u = user_with_email(email)
@@ -82,24 +82,33 @@ class Drug(app.db.Model):
     creation_time = app.db.Column(app.db.DateTime)
     label_name = app.db.Column(app.db.Text(), index=True)
     generic_name = app.db.Column(app.db.Text(), index=True)
-    strength = app.db.Column(app.db.String(25))
-    form = app.db.Column(app.db.String(25))
     unique_id = app.db.Column(app.db.String(12), unique=True)
     companies = app.db.relationship('Company', secondary=drugs,
                                     backref=app.db.backref('drugs', lazy='dynamic'))
     listings = app.db.relationship('Listing', lazy='dynamic', backref='drug')
 
-    def __init__(self, generic_name, strength, form, label_name=None):
+    def __init__(self, generic_name, label_name):
         self.generic_name = generic_name
         self.label_name = label_name
-        self.strength = strength
-        self.form = form
         self.unique_id = app.utility.generate_id()
         self.creation_time = app.utility.get_time()
+
+def create_drug(generic_name, label_name):
+    drug = app.models.Drug(generic_name, label_name)
+    app.db.session.add(drug)
+    return drug
+
+def get_or_create_drug(generic_name, label_name):
+    # Drug is given by generic_name and label_name, possible None for either
+    drug = app.models.Drug.query.filter(app.models.Drug.generic_name == generic_name,
+                                        app.models.Drug.label_name == label_name).first()
+    return drug or create_drug(generic_name, label_name)
 
 class Listing(app.db.Model):
     id = app.db.Column(app.db.Integer, primary_key=True)
     creation_time = app.db.Column(app.db.DateTime)
+    strength = app.db.Column(app.db.String(25))
+    form = app.db.Column(app.db.String(25))
     ful = app.db.Column(app.db.Float)
     smac = app.db.Column(app.db.Float)
     proposed = app.db.Column(app.db.Float)
@@ -108,7 +117,9 @@ class Listing(app.db.Model):
     effective_date = app.db.Column(app.db.DateTime, index=True)
     file_found = app.db.Column(app.db.Text())
 
-    def __init__(self, smac, effective_date, proposed, state, drug_id, ful, file_found):
+    def __init__(self, strength, form, smac, effective_date, proposed, state, drug_id, ful, file_found):
+        self.strength = strength
+        self.form = form
         self.smac = smac
         self.effective_date = effective_date
         self.ful = ful

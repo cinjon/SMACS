@@ -22,7 +22,7 @@ def files_later_than(date, file_ends):
             continue
         seen.add(file_end)
 
-        file_date = app.utility.datetime_from_regex(file_end)
+        file_date = app.process.utility.datetime_from_regex(file_end)
         if not file_date:
             print 'whats up with this file_end? it has no date: %s' % file_end
         elif not date or file_date > date:
@@ -56,4 +56,4 @@ def download_files(debug=False):
     if debug:
         return urls
     for url in urls:
-        app.process.main.download(url, app.process.illinois.main.documents + '/src')
+        app.process.utility.download(url, app.process.illinois.main.documents + '/src')

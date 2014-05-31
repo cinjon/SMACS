@@ -46,7 +46,7 @@ def get_drug_start(line_words):
         for txt in txts:
             try:
                 fl = float(txt)
-                if '.' in txt and not any([month in txts for month in app.utility.months]):
+                if '.' in txt and not any([month in txts for month in app.process.utility.months]):
                     float_check = True
                     break
             except Exception, e:
@@ -63,7 +63,7 @@ def get_drug_start(line_words):
 
 def get_effective_date_from_header(line):
     line = ' '.join([word.txt for word in line])
-    return app.utility.datetime_from_regex(line)
+    return app.process.utility.datetime_from_regex(line)
 
 def get_date_and_line_number(date, line_words):
     line_number = 0
