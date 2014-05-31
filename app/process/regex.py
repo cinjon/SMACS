@@ -1,7 +1,7 @@
 import re
 
 date_regex  = re.compile("^(\d{1,2})/(\d{1,2})/(\d{4})$")
-dose_regex = re.compile("^(.*)\s(\d*\.*\d+)\s{0,1}([a-z\%]+)|(.*)\s(\d*\.*\d+[a-z\%]*\-\d*\.*\d+\s{0,1}[a-z\%]*)$")
+dose_regex = re.compile("^(.*)\s(\d*\.*\d+)\s{0,1}([a-z\%]+)|(.*)\s(\d*\.*\d+[a-z\%]*\-\d*\.*\d+\s{0,1}[a-z\%]*)|(.*)\s(\d+\s*\,*\d*\-*\d+\s*\,*\d*\s{0,1}unit[s]*).*$")
 price_regex = re.compile("^([\d*O*\d*]+)[^\d]+([\d*O*]{4,5})\?*$") #so not robust, ugh.
 parens_regex = re.compile("^\(1([\d*0*]{5})$") #sometimes, 0 looks like (1 to ghostscript
 
