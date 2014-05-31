@@ -4,6 +4,7 @@ import string
 import re
 import app
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import jsonify, Response
 
 start_date = datetime.datetime(year=1970,month=1,day=1)
 months = ['january', 'february', 'march', 'april', 'may', 'june', 'july',
@@ -15,7 +16,6 @@ def get_time():
 
 def datetime_from_regex(date):
     regexes = app.process.regex
-
     #These two have the explicit months in them
     match = regexes.legible_date_regex.match(date) or regexes.master_list_date_regex.match(date) or regexes.master_specialty_list_date_regex.match(date)
     do_index = True
@@ -54,11 +54,6 @@ def get_unixtime(_datetime=None):
         return (_datetime - start_date).total_seconds()
     return (datetime.datetime.utcnow() - start_date).total_seconds()
 
-def serialize_datetime(_datetime):
-    if _datetime is None:
-        return None
-    return _datetime.strftime("%Y-%m-%d")
-
 def generate_hash(word):
     return generate_password_hash(word)
 
@@ -71,13 +66,19 @@ def json_handler(obj):
     else:
         raise TypeError, 'Object of type %s with value of %s is not JSON serializable' % (type(obj), repr(obj))
 
-def short_text(txt, length, replace):
-    if len(txt) > length:
-        return txt[:(length - len(replace))]
-    return txt
-
-def generate_id(size=6):
+def generate_id(size=12):
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(size))
 
 def enum(**enums):
     return type('Enum', (), enums)
+
+def xhr_response(data, code):
+    response = jsonify(data)
+    response.status_code = code
+    return response
+
+def xhr_user_login(u, success):
+    if success:
+        data = {'email':u.email}
+        return xhr_response(data, 202)
+    return xhr_response({}, 401)
