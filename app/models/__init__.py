@@ -16,6 +16,7 @@ class Drug(app.db.Model):
     generic_name = app.db.Column(app.db.Text(), index=True)
     strength = app.db.Column(app.db.String(25))
     form = app.db.Column(app.db.String(25))
+    unique_id = app.db.Column(app.db.String(12), unique=True)
     companies = app.db.relationship('Company', secondary=drugs,
                                     backref=app.db.backref('drugs', lazy='dynamic'))
     listings = app.db.relationship('Listing', lazy='dynamic', backref='drug')
@@ -25,6 +26,7 @@ class Drug(app.db.Model):
         self.label_name = label_name
         self.strength = strength
         self.form = form
+        self.unique_id = app.utility.generate_id()
         self.creation_time = app.utility.get_time()
 
 class Listing(app.db.Model):
