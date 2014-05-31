@@ -1,5 +1,17 @@
 import app
 
+def declare_api():
+    app.api.add_to_api('drug', app.models.Drug, ['GET'],
+                       exclude_columns=['listings', 'companies'])
+    app.api.add_to_api('drug-max', app.models.Drug, ['GET'],
+                       include_columns=['generic_name', 'label_name'], results_per_page=None)
+    app.api.add_to_api('typeahead-labels', app.models.Drug, ['GET'],
+                       include_columns=['label_name', 'strength', 'form'], results_per_page=None,
+                       postprocessors={'GET_MANY':[restless_postprocessor_drug_typeahead]})
+    app.api.add_to_api('typeahead-generics', app.models.Drug, ['GET'],
+                       include_columns=['generic_name', 'strength', 'form'], results_per_page=None,
+                       postprocessors={'GET_MANY':[restless_postprocessor_drug_typeahead]})
+
 # Using the preprocessors instead of the filters caused a very large slowdown
 # when operating with results_per_page=None. So it's fine for most things,
 # but not for typeahead results
@@ -20,14 +32,3 @@ def restless_postprocessor_drug_typeahead(result=None, search_params=None, **kw)
         del _object['form']
     result['objects'] = _objects
     return result
-
-app.api.add_to_api('drug', app.models.Drug, ['GET'],
-                   exclude_columns=['listings', 'companies'])
-app.api.add_to_api('drug-max', app.models.Drug, ['GET'],
-                   include_columns=['generic_name', 'label_name'], results_per_page=None)
-app.api.add_to_api('typeahead-labels', app.models.Drug, ['GET'],
-                   include_columns=['label_name', 'strength', 'form'], results_per_page=None,
-                   postprocessors={'GET_MANY':[restless_postprocessor_drug_typeahead]})
-app.api.add_to_api('typeahead-generics', app.models.Drug, ['GET'],
-                   include_columns=['generic_name', 'strength', 'form'], results_per_page=None,
-                   postprocessors={'GET_MANY':[restless_postprocessor_drug_typeahead]})

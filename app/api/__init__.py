@@ -1,4 +1,5 @@
 import app
+import drugs
 
 def add_to_api(api_name, model, methods, **kwargs):
     # kwargs include include_columns, exclude_columns, primary_key, results_per_page ...
@@ -16,4 +17,5 @@ def restless_preprocessor(search_params=None, filter=None, **kw):
         search_params['filters'] = []
     search_params['filters'].append(filter)
 
-import drugs
+def declare_api():
+    drugs.declare_api()
