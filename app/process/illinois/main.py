@@ -223,22 +223,6 @@ def get_label_name_words(line):
     generic_start_left = 1090 #it's really 1100, but we put a buffer jjjjjust in case
     return [word for word in line if word.l < generic_start_left]
 
-def get_strength_of_drug(name):
-    match = app.process.regex.dose_regex.match(name)
-    if not match:
-        return None
-    groups = match.groups()
-    if groups[0]:
-        return ''.join([g.strip() for g in groups[1:] if g])
-    num = 0
-    while (num < len(groups) and not groups[num]):
-        num += 1
-    if num == len(groups) - 1:
-        if groups[num].split(' ')[0] == name.split(' ')[0]:
-            return None
-        return groups[num].strip()
-    return ''.join([g.strip() for g in groups[num+1:] if g])
-
 def get_title_of_drug(line):
     return ' '.join([w.txt for w in line])
 
@@ -254,22 +238,54 @@ forms = ['tablet', 'capsule', 'cream', 'drops', 'suspension',
          'vial', 'spray', 'ointment', 'lotion', 'syrup',
          'syringe', 'elixir', 'gel', 'powder', 'piggyback',
          'shampoo']
-def get_drug_information_from_name_words(words):
-    full_name = ' '.join([w.txt for w in words])
-    lowercase = full_name.lower()
-    strength = get_strength_of_drug(lowercase)
-    for form in forms:
-        if form in lowercase:
-            return full_name, form.title(), strength
-    return full_name, None, strength
+def get_drug_information_from_name_words(generic_words, label_words):
+    def get_name_and_strength_of_drug(text):
+        match = app.process.regex.dose_regex.match(text.lower())
+        if not match:
+            return text, None
+        groups = match.groups()
+        if groups[0]:
+            # the name is first. everything after we consider strength
+            return text[:len(groups[0])], ''.join([g.strip() for g in groups[1:] if g])
+        num = 0
+        while (num < len(groups) and not groups[num]):
+            # find where the name is
+            num += 1
+        if num == len(groups) - 1:
+            # is it at the end? if so, make sure that there is a strength
+            if groups[num].split(' ')[0] == text.lower().split(' ')[0]:
+                return text, None
+            return text, groups[num].strip()
+        return text[:len(groups[num])], ''.join([g.strip() for g in groups[num+1:] if g])
+
+    def get_form_of_drug(text):
+        text = text.lower()
+        for form in forms:
+            if form in text:
+                return form.title()
+        return None
+
+    generic_word_text = ' '.join([w.txt for w in generic_words])
+    form = get_form_of_drug(generic_word_text)
+
+    # Get generic name and strength
+    generic_name, strength = get_name_and_strength_of_drug(generic_word_text)
+
+    # Get label name if necessary. Supply a strength if not already found
+    label_name = None
+    if label_words:
+        label_name, label_strength = get_name_and_strength_of_drug(' '.join([w.txt for w in label_words]))
+        strength = strength or label_strength
+
+    return generic_name, label_name, form, strength
 
 def make_drug_line_dicts(label_names, generic_names, lines, columns, date):
     ret = []
     for pos, line in enumerate(lines):
-        generic_name, form, strength = get_drug_information_from_name_words(generic_names[pos])
+        generic_name, label_name, form, strength = get_drug_information_from_name_words(generic_names[pos], label_names[pos])
         assignment = {'Generic Name':generic_name, 'Form':form, 'Strength':strength}
-        if label_names[pos]:
-            assignment['Label Name'] = ' '.join([w.txt for w in label_names[pos]])
+        if label_name:
+            assignment['Label Name'] = label_name
 
         for word in line[len(generic_names[pos]) + len(label_names[pos]):]:
             for column in columns[1:]:
