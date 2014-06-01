@@ -129,12 +129,12 @@ def _process_from_hocr_to_db(file_assignments, state):
             label_name = assignment.get('Label Name')
 
             if not generic_name and not label_name:
-                if not in no_names:
+                if f not in no_names:
                     no_names[f] = []
                 no_names[f].append(assignment)
                 continue
 
-            drug = app.models.get_or_make_drug(generic_name, label_name)
+            drug = app.models.get_or_create_drug(generic_name, label_name)
             try:
                 listing = app.models.Listing(
                     effective_date=assignment.get('Date'),
