@@ -1,23 +1,50 @@
 import app
 import os
 
+########
+# Illinois's main.py: Guides the IL processing
+#
+# Central function is def process(...)
+########
+
 parent_directory = os.path.dirname(os.path.realpath(__file__))
 documents = parent_directory + '/documents'
+header_max_lines = 10
 
-def has_colliding_column(column, line):
-    for word in line:
-        if word.r >= column.l and column.r >= word.l:
-            return True, word.txt
-    return False, None
+def process(loc, date=None, columns=None, type_file=None):
+    # Runs the processing for IL
+    # loc is a file location
+    # date is a datetime object, passed in to the later html files in an hocr dir after processing the first
+    # columns is a list of columns, similarly processed by the first and passed to the rest
+    # type_file is string:{proposed, generic, label}
 
-def is_missing_column(prev, _next, line):
-    if prev.r >= _next.l and _next.r >= prev.l: #prev and next mix
-        l = min(prev.l, _next.l)
-        r = max(prev.r, _next.r)
-        for num, w in enumerate(line):
-            if num < len(line)-1 and w.r < l and line[num+1].l > r:
-                return True, num
-    return False, None
+    line_words = app.process.load.get_all_line_words(loc)
+
+    # It isn't reliable to depend on later pages having the same drug_start as earlier ones
+    drug_start = get_drug_start(line_words)
+
+    if not type_file:
+        type_file = get_type_of_file(loc, line_words, drug_start)
+
+    date = get_date_from_header(date, line_words)
+    if not date:
+        print 'No date in %s' % loc
+        return [], None, None, None
+
+    columns = get_columns_from_file(columns, line_words, type_file)
+    if not columns:
+        print 'No Columns Found: %s' % loc
+        return [], None, None, None
+
+    if type_file == 'generic' or type_file == 'proposed':
+        processed = process_generic_page(line_words, drug_start, columns, date)
+    elif type_file == 'label':
+        processed = process_label_page(line_words, drug_start, columns, date)
+    else:
+        print 'Wtf? no processed to speak of: %s' % loc
+        processed = []
+
+    return processed, date, columns, type_file
 
 list_of_headers = ['State Maximum', 'will be reimbursed', 'Upper Limit', 'Generic Name', 'Multi-Source Brand',
                    'enerlc ame', 'G _ N Current', 'Price Effective Date', '. C t SMAC']
@@ -61,31 +88,65 @@ def get_drug_start(line_words):
     drug_start += 1
     return drug_start
 
-def get_effective_date_from_header(line):
-    line = ' '.join([word.txt for word in line])
-    return app.process.utility.datetime_from_regex(line)
+def get_date_from_header(date, line_words):
+    # If not date, finds and returns the date in the header
+    if date:
+        return date
+    for index in range(header_max_lines):
+        date = app.process.utility.datetime_from_regex(
+            ' '.join([word.txt for word in line_words[index]]))
+        if date:
+            return date
+    return None
 
-def get_date_and_line_number(date, line_words):
-    line_number = 0
-    if not date:
-        while(line_number < 10):
-            date = get_effective_date_from_header(line_words[line_number])
-            if date:
-                break
-            line_number += 1
-    return line_number, date
+def state_specific_linefix_funcs():
+    def fix_line_conversion_mistakes(line, prev_line, next_line):
+        line_text = ' '.join([w.txt for w in line])
+        if line_text == 'L b I N G _ N Old SMAC Current SMAC':
+            label_word = app.models.Word('Label Name',
+                                         line[0].l, line[0].t, line[3].r, next_line[0].b)
+            generic_word = app.models.Word('Generic Name',
+                                           line[4].l, line[4].t, line[6].r, next_line[0].b)
+            temp = line[7:]
+            line = [label_word, generic_word]
+            line.extend(temp)
+        return line
+    return [fix_line_conversion_mistakes]
 
-def get_columns_and_line_number(columns, line_number, line_words, type_file):
-    if not columns:
-        while(line_number < 10):
-            line_number += 1
-            line = line_words[line_number]
-            line_text = [w.txt for w in line]
-            if 'Generic_Name' in line_text or ('Generic' in line_text and 'Name' in line_text) or ('L' in line_text and 'b' in line_text and 'G' in line_text):
-                #last clause is because some of the specialtys get really fucked up
-                columns = get_column_bounding_boxes(line, line_words[line_number-1], line_words[line_number+1], type_file)
-                break
-    return line_number, columns
+def state_specific_wordfix_funcs():
+    column_text_dict = {'Generic_Name':'Generic Name', 'Wren':'Current'}
+
+    def fix_word_zeros(word):
+        word.txt = word.txt.replace('0', 'O')
+        return word
+    def fix_word_column_names(word):
+        txt = word.txt
+        if txt in ['N', 't']:
+            #Notes ... skipping for now
+            word.txt = None
+        elif txt in column_text_dict:
+            word.txt = column_text_dict[txt]
+        elif txt.replace('_', '') in column_text_dict:
+            word.txt = column_text_dict[txt.replace('_', '')]
+        return word
+    return [fix_word_zeros, fix_word_column_names]
+
+def get_columns_from_file(columns, line_words, type_file):
+    # If not columns, finds and returns the file's columns
+    if columns:
+        return columns
+
+    def line_has_columns(line_word_texts):
+        # last clause below is because some of the specialty pages convert very poorly
+        return 'Generic_Name' in line_text or ('Generic' in line_text and 'Name' in line_text) or ('L' in line_text and 'b' in line_text and 'G' in line_text)
+
+    for index in range(header_max_lines):
+        if line_has_columns([w.txt for w in line_words[index]]):
+            column_boxes = get_column_bounding_boxes(
+                line[index], line_words[index-1], line_words[index+1],
+                state_specific_linefix_funcs(), state_specific_wordfix_funcs())
+            return merge_column_names(column_boxes, line_words[index+1], type_file)
+    return None
 
 def get_start_of_generic(drug_lines):
     lefts = [w.l for w in drug_lines]
@@ -103,9 +164,33 @@ def get_type_of_file(loc, line_words, drug_start):
     return 'unknown type'
 
 def merge_column_names(columns, next_line, type_file):
+    # Merge the column names to form the right ones. Highly state dependent
+    # and_group_rules is (column.title, next_column.title):(new_column_title, position_delta)
+    and_group_rules = {('Generic', 'Name'):('Generic Name', 1), ('Old', 'Smac'):('Old Smac', 1),
+                       ('Label', 'Name'):('Label Name', 1), ('Current', 'FUL'):('FUL', 1),
+                       ('Current.', 'FUL'):('FUL', 1), ('Current', None):('SMAC', 0),
+                       ('Current.', None):('SMAC', 0), ('Cgrint', 'CuSrl:ne:(t:lL'):('FUL', 0),
+                       ('CuSrl:ne:(t:lL', 'SMAC'):('SMAC', 0), ('Current SMAC', None):('SMAC', 0)}
+
+    def get_title_and_delta_from_and_rules(column, next_column):
+        for group, result in and_group_dict.iteritems():
+            if column.title == group[0] and (not groups[1] or next_column.title == groups[1]):
+                return result[0], result[1]
+        return None, None
+    def get_title_from_prev_column(column, next_column, prev_title, next_line)
+        if column.title == 'SMAC' and next_column.title == 'Notes':
+            has_collision, text = app.process.utility.has_colliding_column(column, next_line)
+            if has_collision:
+                return column.title + ' ' + text, 0
+            elif prev_title == 'Current':
+                return 'Effective Date', 0
+            elif prev_title == 'Current SMAC' or prev_title == 'SMAC': #column changed from CuSrl..
+                return 'Proposed SMAC', 0
+        else:
+            return column.title, 0
+
     ret = []
-    position = 0
-    while(position < len(columns)):
+    for position in range(len(columns)):
         column = columns[position]
         if position == len(columns) - 1:
             if column.title == 'SMAC' and 'Effective' in [w.txt for w in next_line]:
@@ -119,96 +204,24 @@ def merge_column_names(columns, next_line, type_file):
             continue
 
         next_column = columns[position+1]
-        if column.title == 'Generic' and next_column.title == 'Name':
-            new_column = app.models.Column('Generic Name',
-                                           column.l, min(column.t, next_column.t),
+        title, position_delta = get_title_and_delta_from_and_rules(column, next_column)
+        if not title:
+            title = get_title_from_prev_column(column, next_column, prev_title, next_line)
+            position_delta = 0
+
+        position += position_delta
+        if position_delta > 0:
+            new_column = app.models.Column(title, column.l, min(column.t, next_column.t),
                                            next_column.r, max(column.b, next_column.b))
             ret.append(new_column)
-            position += 1
-        elif column.title == 'Old' and next_column.title == 'SMAC':
-            new_column = app.models.Column('Old SMAC',
-                                           column.l, min(column.t, next_column.t),
-                                           next_column.r, max(column.b, next_column.b))
-            ret.append(new_column)
-            position += 1
-        elif column.title == 'Label' and next_column.title == 'Name':
-            new_column = app.models.Column('Label Name',
-                                           column.l, min(column.t, next_column.t),
-                                           next_column.r, max(column.b, next_column.b))
-            ret.append(new_column)
-            position += 1
-        elif column.title == 'Current' or column.title == 'Current.':
-            if next_column.title == 'FUL':
-                new_column = app.models.Column('FUL',
-                                               column.l, min(column.t, next_column.t),
-                                               column.r, max(column.b, next_column.b))
-                ret.append(new_column)
-                position += 1
-            else:
-                column.title = 'SMAC'
-                ret.append(column)
-        elif column.title == 'SMAC' and next_column.title == 'Notes' and position > 0:
-            prev_title = columns[position-1].title
-            has_collision, text = has_colliding_column(column, next_line)
-            if has_collision:
-                column.title = column.title + ' ' + text
-            elif prev_title == 'Current':
-                column.title = 'Effective Date'
-            elif prev_title == 'Current SMAC' or prev_title == 'SMAC': #column changed from CuSrl..
-                column.title = 'Proposed SMAC'
-            ret.append(column)
-        elif column.title == 'Current SMAC' or (column.title == 'CuSrl:ne:(t:lL' and next_column.title == 'SMAC'):
-            column.title = 'SMAC'
-            ret.append(column)
-        elif column.title == 'Cgrint' and next_column.title == 'CuSrl:ne:(t:lL':
-            column.title = 'FUL'
-            ret.append(column)
         else:
+            column.title = title
             ret.append(column)
-        position += 1
+
     if len(next_line) == 1 and next_line[0].txt == 'Proposed' and next_line[0].l > columns[-1].r:
         col = next_line[0]
         ret.append(app.models.Column('Proposed SMAC', col.l, col.t, col.r, col.b))
     return ret
-
-def get_column_bounding_boxes(line, prev_line, next_line, type_file, debug=False):
-    columns = []
-
-    if ' '.join([w.txt for w in line]) == 'L b I N G _ N Old SMAC Current SMAC':
-        label_word = app.models.Word('Label Name', line[0].l, line[0].t, line[3].r, next_line[0].b)
-        generic_word = app.models.Word('Generic Name', line[4].l, line[4].t, line[6].r, next_line[0].b)
-        temp = line[7:]
-        line = [label_word, generic_word]
-        line.extend(temp)
-
-    for word in line:
-        word.txt = word.txt.replace('0', 'O')
-        txt = word.txt
-        if txt in ['N', 't']: #Notes ... if we want to add it later
-            continue
-        if txt == 'Generic_Name':
-            word.txt = 'Generic Name'
-        elif txt == 'Wren':
-            word.txt = 'Current'
-        elif txt.replace('_', '') == 'SMAC':
-            word.txt = 'SMAC'
-        columns.append(app.models.Column(word.txt,
-                                         int(word.l), int(word.t),
-                                         int(word.r), int(word.b)))
-
-    prev = prev_line[0]
-    _next = next_line[-1]
-    is_missing, column = is_missing_column(prev, _next, line)
-    if is_missing:
-        column += 1
-        columns = columns[:column] + [
-            app.models.Column(prev.txt + ' ' + _next.txt,
-                              min(int(prev.l), int(_next.l)), int(prev.t),
-                              max(int(prev.r), int(_next.r)), int(_next.b))
-            ] + columns[column:]
-    if debug:
-        return columns
-    return merge_column_names(columns, next_line, type_file)
 
 def get_generic_name_words(line, next_column, len_label_words=0):
     position = len_label_words
@@ -329,9 +342,6 @@ def process_label_page(line_words, drug_start, columns, date):
             drug_lines.append(line)
     return make_drug_line_dicts(label_names, generic_names, drug_lines, columns, date)
 
-def process_proposed_page(line_words, drug_start, columns, date):
-    pass
-
 #TODO: Refactor the shit out of this.
 def process_generic_page(line_words, drug_start, columns, date):
     line_names = []
@@ -359,32 +369,3 @@ def process_generic_page(line_words, drug_start, columns, date):
             line_names.append(name)
             drug_lines.append(line)
     return make_drug_line_dicts([[] for i in range(len(line_names))], line_names, drug_lines, columns, date)
-
-def process(loc, date=None, columns=None, drug_start=None, type_file=None):
-    line_words = app.process.load.get_all_line_words(loc)
-
-    line_number, date = get_date_and_line_number(date, line_words)
-    if not date:
-        print 'No date in %s' % loc
-        return [], None, None, None
-
-    ## We do this everytime because the conversion isn't reliable
-    drug_start = get_drug_start(line_words)
-
-    if not type_file:
-        type_file = get_type_of_file(loc, line_words, drug_start)
-
-    line_number, columns = get_columns_and_line_number(columns, line_number, line_words, type_file)
-    if not columns:
-        print 'No Columns Found: %s' % loc
-        return [], None, None, None
-
-    if type_file == 'generic' or type_file == 'proposed':
-        processed = process_generic_page(line_words, drug_start, columns, date)
-    elif type_file == 'label':
-        processed = process_label_page(line_words, drug_start, columns, date)
-    else:
-        print 'Wtf? no processed to speak of: %s' % loc
-        processed = []
-
-    return processed, date, columns, drug_start, type_file

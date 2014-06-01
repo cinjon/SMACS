@@ -5,6 +5,15 @@ import urllib2
 import shutil
 import urlparse
 
+########
+# Supporting utility tools for all processing
+# Includes functions for state processing
+########
+
+########
+# Dates
+########
+
 months = ['january', 'february', 'march', 'april', 'may', 'june', 'july',
           'august', 'september', 'october', 'november', 'december']
 abbr_months = ['jan', 'feb', 'march', 'april', 'may', 'june', 'july', 'aug', 'sep', 'oct', 'nov', 'dec']
@@ -88,3 +97,56 @@ def download(url, dir, fileName=None):
             shutil.copyfileobj(r,f)
     finally:
         r.close()
+
+########
+# Bounding Box Utilities
+########
+
+def has_colliding_column(column, line):
+    for word in line:
+        if word.r >= column.l and column.r >= word.l:
+            return True, word.txt
+    return False, None
+
+def is_missing_column(prev_line_first_word, next_line_last_word, line):
+    if prev_line_first_word.r >= next_line_last_word.l and next_line_last_word.r >= prev_line_first_word.l:
+        l = min(prev_line_first_word.l, next_line_last_word.l)
+        r = max(prev_line_first_word.r, next_line_last_word.r)
+        for num, w in enumerate(line):
+            if num < len(line)-1 and w.r < l and line[num+1].l > r:
+                return True, num
+    return False, None
+
+def get_column_bounding_boxes(line, prev_line_first_word_line, next_line,
+                              apply_state_specific_line_funcs=[],
+                              apply_state_specific_word_funcs=[]):
+    # Gets the column bounding boxes given the line where the columns are
+    # line is the column line, prev_line and next_line are there for help when conversion is off
+    # The state_specific funcs are lists of function rules given by the state's main.py
+    columns = []
+
+    for func in apply_state_specific_line_rules:
+        line = func(line, prev_line, next_line)
+
+    for word in line:
+        for func in apply_state_specific_word_rules:
+            word = func(word)
+        if not word.txt:
+            continue
+        columns.append(
+            app.models.Column(word.txt, int(word.l), int(word.t), int(word.r), int(word.b)))
+
+    prev_line_first_word = prev_line[0]
+    next_line_last_word = next_line[-1]
+    is_missing, column = is_missing_column(
+        prev_line_first_word, next_line_last_word, line)
+    if is_missing:
+        column += 1
+        columns = columns[:column] + [
+            app.models.Column(prev_line_first_word.txt + ' ' + next_line_last_word.txt,
+                              min(int(prev_line_first_word.l), int(next_line_last_word.l)),
+                              int(prev_line_first_word.t),
+                              max(int(prev_line_first_word.r), int(next_line_last_word.r)),
+                              int(next_line_last_word.b))
+            ] + columns[column:]
+    return columns

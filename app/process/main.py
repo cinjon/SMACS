@@ -90,7 +90,6 @@ def process_from_hocr(state):
             continue
         date = None
         columns = None
-        drug_start = None
         type_file = None
         assignments = []
         print root
@@ -99,11 +98,9 @@ def process_from_hocr(state):
                 continue
             absolute_path = root + '/' + f
             try:
-                page_assignments, date, columns, drug_start, type_file = _process(absolute_path, date, columns, drug_start, type_file)
-                if num == 0:
-                    drug_start = None
+                page_assignments, date, columns, type_file = _process(absolute_path, date, columns, type_file)
             except Exception, e:
-                print 'Error: %s, ds: %s' % (absolute_path, drug_start)
+                print 'Error: %s' % absolute_path
                 traceback.print_exc()
 
                 break
