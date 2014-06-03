@@ -63,11 +63,15 @@
   color: #f2f2f2;
 }
 
+.text-center {
+    text-align:center;
+}
+
 .home-headline {
     padding: 10px;
     font-size: 18px;
-    margin: 20px 0 0 0;
-    border: 2px solid rgba(91, 194, 207, .5);
+    margin: 20px 0 10px 0;
+    border: 4px solid rgba(91, 194, 207, .5);
     outline: none;
     text-align:center;
 }
@@ -98,3 +102,30 @@
     font-size: 14px;
     color: #444;
 }
+
+.drug-list {
+    margin-top: 10px;
+}
+
+.drug-display {
+    height: 35px;
+    border: 2px solid rgba(91, 194, 207, .5);
+    border-radius: 20px;
+    padding: 0 5px;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.inner-drug-display {
+    padding: 5px;
+}
+
+.ellipsis {
+   -o-text-overflow: ellipsis;   /* Opera */
+   text-overflow:    ellipsis;   /* IE, Safari (WebKit) */
+   overflow:hidden;              /* don't show excess chars */
+   white-space:nowrap;           /* force single line */
+}
+
+/* For Angular-UI Bootstrap */
+.nav, .pagination, .carousel, .panel-title a { cursor: pointer; }

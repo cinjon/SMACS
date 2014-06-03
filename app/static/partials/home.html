@@ -1,6 +1,7 @@
 <!-- If you're logged in, this is the page you see at / -->
 <!-- Until I hook that functionality up, putting this at /home -->
 
+<div ng-show="false">
 <div class="row">
   <div class="col-md-4">
     <p class="home-headline">
@@ -22,23 +23,36 @@
     </tr>
   </table>
 </div>
+</div>
 
 <div class="row">
-  <div class="col-md-4">
-    <div ng-controller="typeaheadController">
-      <typeahead items="items" prompt="Search Generic Drugs" title="generic_name" subtitle="strength_and_form" model="name" on-select="onItemSelected()" id="search_generic" hideChoices="hideChoices" />
+  <div class="col-md-6">
+    <p class="home-headline">Generic Drugs</p>
+
+    <input type="text" ng-model="genericSelected" placeholder="Search Generic Drugs" typeahead="drug.name for drug in getGenerics($viewValue)" typeahead-loading="loadingDrugs" typeahead-min-length="3" class="form-control text-center">
+    <i ng-show="loadingDrugs" class="glyphicon glyphicon-refresh"></i>
+
+    <div class="drug-list">
+      <div class="drug-display" ng-repeat="drug in randomGenerics" ng-click="handleSelection(drug)">
+        <div class="inner-drug-display ellipsis">
+          {{drug.name}}
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="col-md-4">
-    <div ng-controller="typeaheadController">
-      <typeahead items="items" prompt="Search Label Drugs" title="generic_name" subtitle="strength_and_form" model="name" on-select="onItemSelected()" />
-    </div>
-  </div>
 
-  <div class="col-md-4">
-    <div ng-controller="typeaheadController">
-      <typeahead items="items" prompt="Search Companies" title="name" subtitle="abbreviation" model="name" on-select="onItemSelected()" />
+  <div class="col-md-6">
+    <p class="home-headline">Brand Name Drugs</p>
+    <input type="text" ng-model="labelSelected" placeholder="Search Brand Drugs" typeahead="drug.name for drug in getLabels($viewValue)" typeahead-loading="loadingDrugs" typeahead-min-length="3" class="form-control text-center">
+    <i ng-show="loadingDrugs" class="glyphicon glyphicon-refresh"></i>
+
+    <div class="drug-list">
+      <div class="drug-display" ng-repeat="drug in randomLabels" ng-click="handleSelection(drug)">
+        <div class="inner-drug-display ellipsis">
+          {{drug.name}}
+        </div>
+      </div>
     </div>
   </div>
 </div>
