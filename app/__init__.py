@@ -9,7 +9,7 @@ import config
 
 basedir = config.basedir
 
-flask_app = Flask(__name__)
+flask_app = Flask(__name__, template_folder='public/template')
 flask_app.config.from_object('config')
 
 db = SQLAlchemy(flask_app)

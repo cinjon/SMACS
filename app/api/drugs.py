@@ -1,34 +1,52 @@
 import app
+import random
 
 def declare_api():
-    app.api.add_to_api('drug', app.models.Drug, ['GET'],
-                       exclude_columns=['listings', 'companies'])
+    app.api.add_to_api('drug', app.models.Drug, ['GET'], primary_key='unique_id',
+                       exclude_columns=['listings', 'companies', 'id', 'creation_time'])
     app.api.add_to_api('drug-max', app.models.Drug, ['GET'],
                        include_columns=['generic_name', 'label_name'], results_per_page=None)
+    # Combine the following two into one
     app.api.add_to_api('typeahead-labels', app.models.Drug, ['GET'],
-                       include_columns=['label_name', 'strength', 'form'], results_per_page=None,
-                       postprocessors={'GET_MANY':[restless_postprocessor_drug_typeahead]})
+                       include_columns=['label_name'], results_per_page=None,
+                       postprocessors={'GET_MANY':[restless_postprocessor_filter_typeahead]})
     app.api.add_to_api('typeahead-generics', app.models.Drug, ['GET'],
-                       include_columns=['generic_name', 'strength', 'form'], results_per_page=None,
-                       postprocessors={'GET_MANY':[restless_postprocessor_drug_typeahead]})
+                       include_columns=['generic_name'], results_per_page=None,
+                       postprocessors={'GET_MANY':[restless_postprocessor_filter_typeahead]})
+    app.api.add_to_api('random-drugs', app.models.Drug, ['GET'],
+                       include_columns=['generic_name', 'label_name'], results_per_page=None,
+                       postprocessors={'GET_MANY':[restless_postprocessor_randomize]})
 
 # Using the preprocessors instead of the filters caused a very large slowdown
 # when operating with results_per_page=None. So it's fine for most things,
 # but not for typeahead results
 def restless_preprocessor_labels(search_params=None, **kw):
-    filter = dict(name='label_name', op='is_not_null')
-    return app.api.restless_preprocessor(search_params, filter, **kw)
+    _filter = dict(name='label_name', op='is_not_null')
+    return app.api.restless_preprocessor(search_params, _filter, **kw)
 def restless_preprocessor_generics(search_params=None, **kw):
-    filter = dict(name='label_name', op='is_null')
-    return app.api.restless_preprocessor(search_params, filter, **kw)
+    _filter = dict(name='label_name', op='is_null')
+    return app.api.restless_preprocessor(search_params, _filter, **kw)
 
-def restless_postprocessor_drug_typeahead(result=None, search_params=None, **kw):
-    _objects = result.get('objects', [])
-    for _object in _objects:
-        strength = _object.get('strength') or ''
-        form = _object.get('form') or ''
-        _object['strength_and_form'] = (strength + ' ' + form).strip()
-        del _object['strength']
-        del _object['form']
-    result['objects'] = _objects
-    return result
+def restless_postprocessor_filter_typeahead(result=None, search_params=None, **kw):
+    def get_type_of_typeahead(params):
+        for f in params['filters']:
+            if f.get('name', '') == 'label_name' and f.get('op', '') == 'is_null':
+                return 'generic_name'
+            elif f.get('name', '') == 'label_name' and f.get('op', '') == 'is_not_null':
+                return 'label_name'
+        return None
+
+    name_type = get_type_of_typeahead(search_params)
+    if not name_type:
+        result = result['objects']
+    result['objects'] = [{'name':r[name_type].title(), 'type':name_type} for r in result['objects'] if search_params['query'].strip().lower() in r.get(name_type, '').lower()]
+
+def restless_postprocessor_randomize(result=None, search_params=None, **kw):
+    number = int(search_params['number'])
+    _type = search_params['type']
+    if _type == 'generic_name':
+        drugs = [{'name':o[_type], 'type':_type} for o in result['objects'] if o.get(_type, None) != None and o.get('label_name') == None]
+    elif _type == 'label_name':
+        drugs = [{'name':o[_type], 'type':_type} for o in result['objects'] if o.get(_type, None) != None]
+    random.shuffle(drugs)
+    result['objects'] = [{'type':drug['type'], 'name':drug['name'].title()} for drug in drugs[:number]]
