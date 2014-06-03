@@ -177,7 +177,7 @@ def merge_column_names(columns, next_line, type_file):
             if column.title == group[0] and (not groups[1] or next_column.title == groups[1]):
                 return result[0], result[1]
         return None, None
-    def get_title_from_prev_column(column, next_column, prev_title, next_line)
+    def get_title_from_prev_column(column, next_column, prev_title, next_line):
         if column.title == 'SMAC' and next_column.title == 'Notes':
             has_collision, text = app.process.utility.has_colliding_column(column, next_line)
             if has_collision:
