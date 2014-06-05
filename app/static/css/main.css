@@ -121,10 +121,29 @@
 }
 
 .ellipsis {
-   -o-text-overflow: ellipsis;   /* Opera */
-   text-overflow:    ellipsis;   /* IE, Safari (WebKit) */
-   overflow:hidden;              /* don't show excess chars */
-   white-space:nowrap;           /* force single line */
+    -o-text-overflow: ellipsis;   /* Opera */
+    text-overflow:    ellipsis;   /* IE, Safari (WebKit) */
+    overflow:hidden;              /* don't show excess chars */
+    white-space:nowrap;           /* force single line */
+}
+
+.drug-listing-cell {
+    margin-right:5px;
+    border: 1px solid rgba(91, 194, 207, .5);
+    padding: 10px;
+}
+
+.drug-listing-row {
+    margin-bottom:5px;
+    height:25px;
+    font-size:16px;
+}
+
+.drug-listing-table {
+    border: 1px solid rgba(91, 194, 207, .5);
+    padding: 5px;
+    width: 100%;
+    border-collapse: collapse;
 }
 
 /* For Angular-UI Bootstrap */

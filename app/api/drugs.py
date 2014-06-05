@@ -3,7 +3,8 @@ import random
 
 def declare_api():
     app.api.add_to_api('drug', app.models.Drug, ['GET'], primary_key='unique_id',
-                       exclude_columns=['listings', 'companies', 'id', 'creation_time'])
+                       exclude_columns=['companies', 'id', 'creation_time'],
+                       postprocessors={'GET_SINGLE':[restless_postprocessor_filter_listings]})
     app.api.add_to_api('drug-max', app.models.Drug, ['GET'],
                        include_columns=['generic_name', 'label_name'], results_per_page=None)
     # Combine the following two into one
@@ -40,6 +41,26 @@ def restless_postprocessor_filter_typeahead(result=None, search_params=None, **k
     if not name_type:
         result = result['objects']
     result['objects'] = [{'name':r[name_type].title(), 'type':name_type} for r in result['objects'] if search_params['query'].strip().lower() in r.get(name_type, '').lower()]
+
+def restless_postprocessor_filter_listings(result=None, search_params=None, **kw):
+    def filter_and_order_listings(listings):
+        return [
+            {'form':l.get('form', ''), 'ful':l.get('ful', ''), 'file':l.get('file_found'),
+             'date':l.get('effective_date'), 'proposed':l.get('proposed', ''),
+             'price':l.get('smac', ''), 'state':l['state'],
+             'strength':l.get('strength', '')} for l in sorted(listings, key=lambda listing:listing.get('effective_date'), reverse=True)
+            ]
+    def check_for_key(listings, key):
+        return any([l.get(key) for l in listings])
+
+    if 'listings' in result:
+        listings = result['listings']
+        result['listings'] = filter_and_order_listings(listings)
+        result['hasProposed'] = check_for_key(listings, 'proposed')
+        result['hasForm'] = check_for_key(listings, 'form')
+        result['hasFUL'] = check_for_key(listings, 'ful')
+        result['hasStrength'] = check_for_key(listings, 'strength')
+
 
 def restless_postprocessor_randomize(result=None, search_params=None, **kw):
     number = int(search_params['number'])

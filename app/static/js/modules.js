@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'ngResource', 'ngRoute'])
+angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngResource', 'ngRoute'])
   .controller('landing', function($scope, $resource) {
     $scope.loginUser = function() {
       console.log('logging in user ' + $scope.email + ' : ' + $scope.password);
@@ -30,14 +30,20 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'ngResource', 'ngRoute
       $scope.randomGenerics = result.data.objects;
     });
     $http.get('/api/random-drugs?q={"number":10, "type":"label_name"}', {}).then(function(result) {
-      console.log(result);
       $scope.randomLabels = result.data.objects;
     });
   })
   .controller('drugDetail', function($scope, $routeParams, Drug) {
     var drugQuery = Drug.get({drug_id: $routeParams.drug_id}, function(drug) {
-      console.log(drug);
       $scope.drug = drug;
+      $scope.drug.label_name = title(drug.label_name);
+      $scope.drug.generic_name = title(drug.generic_name);
+      $scope.hasProposed = drug.hasProposed;
+      $scope.hasFUL = drug.hasFUL;
+      $scope.hasForm = drug.hasForm;
+      $scope.hasStrength = drug.hasStrength;
+      $scope.hasLabelName = drug.label_name != null;
+      $scope.shortList = true;
     });
   })
   .controller('drugList', function($scope, Drug) {
@@ -76,11 +82,15 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'ngResource', 'ngRoute
     }
   ]);
 
-// angular.module("template/home/drug-result.html", []).run(["$templateCache", function($templateCache) {
-//   $templateCache.put("template/home/drug-result.html",
-//     "<ul class=\"dropdown-menu\" ng-style=\"{display: isOpen()&&'block' || 'none', width:100%, top: position.top+25+'px'}\">\n" +
-//     "    <li ng-repeat=\"match in matches\" ng-class=\"{active: isActive($index) }\" ng-mouseenter=\"selectActive($index)\" ng-click=\"selectMatch($index)\">\n" +
-//     "        <div typeahead-match index=\"$index\" match=\"match\" query=\"query\" template-url=\"templateUrl\"></div>\n" +
-//     "    </li>\n" +
-//     "</ul>");
-// }]);
+var title = function(input) {
+  // TODO: Get the filter version of this working instead
+  var parts = input.toLowerCase().split(' ');
+  for (var index in parts) {
+    var part = parts[index];
+    if (part == '') {
+      continue;
+    }
+    parts[index] = part.slice(0, 1).toUpperCase() + part.slice(1);
+  }
+  return parts.join(' ');
+}
