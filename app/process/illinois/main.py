@@ -138,12 +138,12 @@ def get_columns_from_file(columns, line_words, type_file):
 
     def line_has_columns(line_word_texts):
         # last clause below is because some of the specialty pages convert very poorly
-        return 'Generic_Name' in line_text or ('Generic' in line_text and 'Name' in line_text) or ('L' in line_text and 'b' in line_text and 'G' in line_text)
+        return 'Generic_Name' in line_word_texts or ('Generic' in line_word_texts and 'Name' in line_word_texts) or ('L' in line_word_texts and 'b' in line_word_texts and 'G' in line_word_texts)
 
     for index in range(header_max_lines):
         if line_has_columns([w.txt for w in line_words[index]]):
-            column_boxes = get_column_bounding_boxes(
-                line[index], line_words[index-1], line_words[index+1],
+            column_boxes = app.process.utility.get_column_bounding_boxes(
+                line_words[index], line_words[index-1], line_words[index+1],
                 state_specific_linefix_funcs(), state_specific_wordfix_funcs())
             return merge_column_names(column_boxes, line_words[index+1], type_file)
     return None
@@ -173,8 +173,8 @@ def merge_column_names(columns, next_line, type_file):
                        ('CuSrl:ne:(t:lL', 'SMAC'):('SMAC', 0), ('Current SMAC', None):('SMAC', 0)}
 
     def get_title_and_delta_from_and_rules(column, next_column):
-        for group, result in and_group_dict.iteritems():
-            if column.title == group[0] and (not groups[1] or next_column.title == groups[1]):
+        for group, result in and_group_rules.iteritems():
+            if column.title == group[0] and (not group[1] or next_column.title == group[1]):
                 return result[0], result[1]
         return None, None
     def get_title_from_prev_column(column, next_column, prev_title, next_line):
@@ -205,8 +205,9 @@ def merge_column_names(columns, next_line, type_file):
 
         next_column = columns[position+1]
         title, position_delta = get_title_and_delta_from_and_rules(column, next_column)
-        if not title:
-            title = get_title_from_prev_column(column, next_column, prev_title, next_line)
+        if not title and position > 0:
+            title = get_title_from_prev_column(column, next_column,
+                                               columns[position-1].title, next_line)
             position_delta = 0
 
         position += position_delta
@@ -253,13 +254,14 @@ forms = ['tablet', 'capsule', 'cream', 'drops', 'suspension',
          'shampoo']
 def get_drug_information_from_name_words(generic_words, label_words):
     def get_name_and_strength_of_drug(text):
+        # returning the full text though because slicing off the backend isn't reliable atm.
         match = app.process.regex.dose_regex.match(text.lower())
         if not match:
             return text, None
         groups = match.groups()
         if groups[0]:
             # the name is first. everything after we consider strength
-            return text[:len(groups[0])], ''.join([g.strip() for g in groups[1:] if g])
+            return text, ''.join([g.strip() for g in groups[1:] if g])
         num = 0
         while (num < len(groups) and not groups[num]):
             # find where the name is
@@ -269,7 +271,7 @@ def get_drug_information_from_name_words(generic_words, label_words):
             if groups[num].split(' ')[0] == text.lower().split(' ')[0]:
                 return text, None
             return text, groups[num].strip()
-        return text[:len(groups[num])], ''.join([g.strip() for g in groups[num+1:] if g])
+        return text, ''.join([g.strip() for g in groups[num+1:] if g])
 
     def get_form_of_drug(text):
         text = text.lower()

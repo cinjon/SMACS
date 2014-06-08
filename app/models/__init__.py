@@ -12,7 +12,7 @@ ROLE_TEST = 2
 #     app.db.Column('role_id', app.db.Integer(), app.db.ForeignKey('role.id')))
 
 drugs = app.db.Table(
-    'drugs',
+    'company_drugs',
     app.db.Column('drug_id', app.db.Integer, app.db.ForeignKey('drug.id')),
     app.db.Column('company_id', app.db.Integer, app.db.ForeignKey('company.id'))
 )
@@ -113,18 +113,16 @@ class Listing(app.db.Model):
     smac = app.db.Column(app.db.Float)
     proposed = app.db.Column(app.db.Float)
     state = app.db.Column(app.db.String(2), index=True)
-    drug_id = app.db.Column(app.db.Integer, app.db.ForeignKey('drug.id'), index=True)
     effective_date = app.db.Column(app.db.DateTime, index=True)
     file_found = app.db.Column(app.db.Text())
 
-    def __init__(self, strength, form, smac, effective_date, proposed, state, drug_id, ful, file_found):
+    def __init__(self, strength, form, smac, effective_date, proposed, state, ful, file_found):
         self.strength = strength
         self.form = form
         self.smac = smac
         self.effective_date = effective_date
         self.ful = ful
         self.state = state
-        self.drug_id = drug_id
         self.proposed = proposed
         self.file_found = file_found
         self.creation_time = app.utility.get_time()

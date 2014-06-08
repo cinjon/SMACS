@@ -117,7 +117,7 @@ def is_missing_column(prev_line_first_word, next_line_last_word, line):
                 return True, num
     return False, None
 
-def get_column_bounding_boxes(line, prev_line_first_word_line, next_line,
+def get_column_bounding_boxes(line, prev_line, next_line,
                               apply_state_specific_line_funcs=[],
                               apply_state_specific_word_funcs=[]):
     # Gets the column bounding boxes given the line where the columns are
@@ -125,11 +125,11 @@ def get_column_bounding_boxes(line, prev_line_first_word_line, next_line,
     # The state_specific funcs are lists of function rules given by the state's main.py
     columns = []
 
-    for func in apply_state_specific_line_rules:
+    for func in apply_state_specific_line_funcs:
         line = func(line, prev_line, next_line)
 
     for word in line:
-        for func in apply_state_specific_word_rules:
+        for func in apply_state_specific_word_funcs:
             word = func(word)
         if not word.txt:
             continue
