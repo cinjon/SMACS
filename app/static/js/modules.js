@@ -1,5 +1,10 @@
 'use strict';
 
+var drugForms = ['tablet', 'capsule', 'cream', 'drops', 'suspension',
+                 'vial', 'spray', 'ointment', 'lotion', 'syrup',
+                 'syringe', 'elixir', 'gel', 'powder', 'piggyback',
+                 'shampoo', 'other'];
+
 angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngResource', 'ngRoute'])
   .controller('landing', function($scope, $resource) {
     $scope.loginUser = function() {
@@ -12,7 +17,6 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
     $scope.showDrugList = true;
     $scope.handleSelection = function(item) {
       return $http.get('/drug_unique_id/' + item.type + '/' + item.name, {}).then(function(result) {
-        console.log(result);
         $location.url('/drug/' + result.data.unique_id);
       });
     };
@@ -42,8 +46,17 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
       $scope.hasFUL = drug.hasFUL;
       $scope.hasForm = drug.hasForm;
       $scope.hasStrength = drug.hasStrength;
-      $scope.hasLabelName = drug.label_name != null;
+      $scope.hasLabelName = (drug.label_name != null);
       $scope.shortList = true;
+    });
+  })
+  .controller('edit', function($scope, $http, limitToFilter) {
+    $scope.drugForms = capitalize_all(drugForms);
+    $http.get('/api/edit-drugs').then(function(result) {
+      $scope.drugs = result.data.objects;
+    });
+    $http.get('/api/typeahead-canonical-names', {}).then(function(result) {
+      $scope.canonicalNames = limitToFilter(result.data.objects, 5);
     });
   })
   .controller('drugList', function($scope, Drug) {
@@ -75,6 +88,10 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
           templateUrl: 'static/partials/home.html',
           controller: 'home'
         })
+        .when('/edit', {
+          templateUrl: 'static/partials/edit.html',
+          controller: 'edit'
+        })
 	.otherwise({
 	  redirectTo: '/'
 	});
@@ -84,6 +101,9 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
 
 var title = function(input) {
   // TODO: Get the filter version of this working instead
+  if (!input) {
+    return null;
+  }
   var parts = input.toLowerCase().split(' ');
   for (var index in parts) {
     var part = parts[index];
@@ -93,4 +113,12 @@ var title = function(input) {
     parts[index] = part.slice(0, 1).toUpperCase() + part.slice(1);
   }
   return parts.join(' ');
+}
+
+var capitalize_all = function(arr) {
+  var ret = [];
+  drugForms.forEach(function(form) {
+    ret.push(form.slice(0, 1).toUpperCase() + form.slice(1));
+  });
+  return ret;
 }

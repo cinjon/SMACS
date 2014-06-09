@@ -1,0 +1,27 @@
+<div class="row edit-row" ng-repeat="drug in drugs | limitTo:20">
+  <div class="row edit-title">
+    <div class="edit-field">
+      {{drug.generic_name}}
+    </div>
+    <div class="edit-field">
+      {{drug.label_name}}
+    </div>
+  </div>
+  <div class="row">
+    <div class="edit-field">
+      <input type="text" ng-model="drug.generic_name" typeahead="drug.name for drug in getCanonicalNames($viewValue)" typeahead-loading="loadingCanonical" typeahead-min-length="2" class="form-control wide-input">
+    </div>
+    <div ng-show="drug.label_name != null" class="edit-field">
+      <input type="text" ng-model="drug.label_name" placeholder="Set Label Name" typeahead="drug.name for drug in getCanonicalNames($viewValue)" typeahead-loading="loadingCanonical" typeahead-min-length="2" class="form-control half-wide-input">
+    </div>
+    <div class="edit-field">
+      <input class="form-control small-input" placeholder="Set Strength" ng-model="drug.strength">
+    </div>
+    <div class="edit-field">
+      <select class="form-control" ng-model="drug.form" ng-options="form for form in drugForms"></select>
+    </div>
+    <div class="edit-field">
+      <button type="button" class="btn btn-primary">Submit as Complete</button>
+    </div>
+  </div>
+</div>
