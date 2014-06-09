@@ -54,10 +54,23 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
     $scope.drugForms = capitalize_all(drugForms);
     $http.get('/api/edit-drugs').then(function(result) {
       $scope.drugs = result.data.objects;
+      $scope.genericNames = get_field_from_drugs($scope.drugs, 'generic_name');
+      $scope.labelNames = get_field_from_drugs($scope.drugs, 'label_name');
     });
     $http.get('/api/typeahead-canonical-names', {}).then(function(result) {
       $scope.canonicalNames = limitToFilter(result.data.objects, 5);
     });
+    $scope.submit = function(drug, index) {
+      $http({
+        url:'/edit-drug',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        data: $.param(drug)
+      }).success(function(data) {
+        console.log(drug);
+        $scope.drugs.splice(index, 1);
+      });
+    }
   })
   .controller('drugList', function($scope, Drug) {
     var drugsQuery = Drug.get({}, function(drugs) {
@@ -116,9 +129,13 @@ var title = function(input) {
 }
 
 var capitalize_all = function(arr) {
-  var ret = [];
-  drugForms.forEach(function(form) {
-    ret.push(form.slice(0, 1).toUpperCase() + form.slice(1));
+  return drugForms.map(function(form) {
+    return form.slice(0, 1).toUpperCase() + form.slice(1);
   });
-  return ret;
+}
+
+var get_field_from_drugs = function(drugs, field) {
+  return drugs.map(function(drug) {
+    return drug[field];
+  });
 }

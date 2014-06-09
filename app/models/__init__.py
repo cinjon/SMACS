@@ -134,6 +134,7 @@ class Listing(app.db.Model):
         self.price_checked = False
 
 class CanonicalNames(app.db.Model):
+    #This should be CanonicalName*****
     id = app.db.Column(app.db.Integer, primary_key=True)
     name_as_key = app.db.Column(app.db.Text(), index=True, unique=True)
     canonical_name = app.db.Column(app.db.Text())
@@ -145,6 +146,12 @@ class CanonicalNames(app.db.Model):
         self.canonical_name = canonical_name
         self.strength = strength
         self.form = form
+
+def create_canonical_name(name_as_key, canonical_name, strength, form):
+    name = app.models.CanonicalNames(
+        name_as_key, canonical_name, strength, form)
+    app.db.session.add(name)
+    return name
 
 class Company(app.db.Model):
     id = app.db.Column(app.db.Integer, primary_key=True)

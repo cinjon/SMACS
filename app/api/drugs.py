@@ -87,4 +87,5 @@ def restless_postprocessor_strength_and_form(result=None, search_params=None, **
         else:
             drug['strength'] = listings[0]['strength']
             drug['form'] = listings[0]['form']
+            del drug['listings']
     result['objects'] = drugs
