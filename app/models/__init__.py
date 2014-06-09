@@ -95,6 +95,22 @@ class Drug(app.db.Model):
         self.creation_time = app.utility.get_time()
         self.edited = False
 
+    def create_canonical_generic_match(self, canonical_name, strength, form):
+        generic_name_as_key = self.generic_name
+        self.generic_name = canonical_name
+        app.models.create_canonical_name(generic_name_as_key, canonical_name, strength, form)
+
+    def create_canonical_label_match(self, canonical_name, strength, form):
+        label_name_as_key = self.label_name
+        self.label_name = canonical_name
+        app.models.create_canonical_name(label_name_as_key, canonical_name, strength, form)
+
+    def set_listing_attributes(self, strength, form):
+        for listing in self.listings:
+            listing.strength = strength
+            listing.form = form
+        app.db.session.commit()
+
 def create_drug(generic_name, label_name):
     drug = app.models.Drug(generic_name, label_name)
     app.db.session.add(drug)
@@ -146,6 +162,60 @@ class CanonicalNames(app.db.Model):
         self.canonical_name = canonical_name
         self.strength = strength
         self.form = form
+
+def set_canonical_generic_name(drug, canonical_name, strength, form):
+    # Looks to see if another drug has the same generic_name as this canonical_name
+    # Merge the two drugs by moving these listings to that one and deletes this one
+    # If no match, sets this one to be the new name
+    # Either way, tables this (generic_name, canonical_name, strength, form) quad
+
+    try:
+        response = {}
+        existing_drug = app.models.Drug.query.filter(app.models.Drug.generic_name == canonical_name, app.models.Drug.label_name == None).first() # There should only be one other if that
+        drug.create_canonical_generic_match(canonical_name, strength, form)
+        if existing_drug:
+            # We found another. Merge these together
+            existing_drug.companies.extend([c for c in drug.companies])
+            existing_drug.listings.extend([l for l in drug.listings])
+            app.db.session.delete(drug)
+            response['deleted'] = True
+        app.db.session.commit()
+        response['success'] = True
+        response['generic_name'] = canonical_name
+        return response
+    except Exception, e:
+        print e
+        app.db.session.rollback()
+        return {'success':False}
+
+def set_canonical_label_name(drug, canonical_label_name, canonical_generic_name, strength, form):
+    # Looks to see if something else has this canonical_name
+    # If so, merges the drugs by moving these listings to that one and deletes this one
+
+    try:
+        response = {}
+        # There should only be one match if that
+        existing_drug = app.models.Drug.query.filter(
+            app.models.Drug.generic_name == canonical_generic_name,
+            app.models.Drug.label_name == canonical_label_name).first()
+        drug.create_canonical_generic_match(canonical_generic_name, strength, form)
+        drug.create_canonical_label_match(canonical_label_name, strength, form)
+
+        if existing_drug:
+            # We found another. Merge these together
+            existing_drug.companies.extend([c for c in drug.companies])
+            existing_drug.listings.extend([l for l in drug.listings])
+            app.db.session.delete(drug)
+            response['deleted'] = True
+        app.db.session.commit()
+        response['success'] = True
+        response['generic_name'] = canonical_generic_name
+        response['label_name'] = canonical_label_name
+        return response
+    except Exception, e:
+        print e
+        app.db.session.rollback()
+        return {'success':False}
 
 def create_canonical_name(name_as_key, canonical_name, strength, form):
     name = app.models.CanonicalNames(

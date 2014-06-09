@@ -50,7 +50,7 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
       $scope.shortList = true;
     });
   })
-  .controller('edit', function($scope, $http, limitToFilter) {
+  .controller('edit', function($scope, $http, limitToFilter, filterFilter) {
     $scope.drugForms = capitalize_all(drugForms);
     $http.get('/api/edit-drugs').then(function(result) {
       $scope.drugs = result.data.objects;
@@ -58,8 +58,12 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
       $scope.labelNames = get_field_from_drugs($scope.drugs, 'label_name');
     });
     $http.get('/api/typeahead-canonical-names', {}).then(function(result) {
-      $scope.canonicalNames = limitToFilter(result.data.objects, 5);
+      $scope.canonicalNames = result.data.objects;
+      console.log($scope.canonicalNames);
     });
+    $scope.startsWith = function(canonicalName, viewValue) {
+      return canonicalName.substr(0, viewValue.length).toUpperCase() == viewValue.toUpperCase();
+    }
     $scope.submit = function(drug, index) {
       $http({
         url:'/edit-drug',
@@ -67,9 +71,19 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         data: $.param(drug)
       }).success(function(data) {
-        console.log(drug);
         $scope.drugs.splice(index, 1);
+        $scope.genericNames.splice(index, 1);
+        $scope.labelNames.splice(index, 1);
+        $scope.addToCanonicalNames(data, 'generic_name');
+        $scope.addToCanonicalNames(data, 'label_name');
+        console.log(data);
+        console.log($scope.canonicalNames);
       });
+    }
+    $scope.addToCanonicalNames = function(data, key) {
+      if (key in data && $scope.canonicalNames.indexOf(data[key]) > -1) {
+        $scope.canonicalNames.push(data[key]);
+      }
     }
   })
   .controller('drugList', function($scope, Drug) {

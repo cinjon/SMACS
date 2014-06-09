@@ -1,4 +1,4 @@
-<div class="row edit-row" ng-repeat="drug in drugs track by $index | limitTo:20">
+<div class="row edit-row" ng-repeat="drug in drugs track by $index | limitTo:50">
   <div class="row edit-title">
     <div class="edit-field">
       {{genericNames[$index]}}
@@ -10,10 +10,10 @@
   <div class="row">
     <form ng-submit="submit(drug, $index)">
       <div class="edit-field">
-        <input type="text" ng-model="drug.generic_name" typeahead="drug.name for drug in canonicalNames | filter:$viewValue" typeahead-loading="loadingCanonical" typeahead-min-length="2" class="form-control wide-input">
+        <input type="text" ng-model="drug.generic_name" typeahead="name for name in canonicalNames | filter:$viewValue:startsWith | limitTo:5" typeahead-loading="loadingCanonical" typeahead-min-length="2" class="form-control wide-input">
       </div>
       <div ng-show="drug.label_name != null" class="edit-field">
-        <input type="text" ng-model="drug.label_name" placeholder="Set Label Name" typeahead="drug.name for drug in getCanonicalNames($viewValue)" typeahead-loading="loadingCanonical" typeahead-min-length="2" class="form-control half-wide-input">
+        <input type="text" ng-model="drug.label_name" placeholder="Set Label Name" typeahead="name for name in canonicalNames | filter:$viewValue:startsWith" typeahead-loading="loadingCanonical" typeahead-min-length="2" class="form-control half-wide-input">
       </div>
       <div class="edit-field">
         <input class="form-control small-input" placeholder="Set Strength" ng-model="drug.strength">

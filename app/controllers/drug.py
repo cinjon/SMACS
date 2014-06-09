@@ -23,28 +23,28 @@ def drug_unique_id(drug_type, drug_name):
 
 @app.flask_app.route('/edit-drug', methods=['GET', 'POST'])
 def edit_drug():
-    generic_name = request.form.get('generic_name')
-    label_name = request.form.get('label_name')
-    unique_id = request.form.get('unique_id')
-    strength = request.form.get('strength')
-    form = request.form.get('form')
+    generic_name = request.form.get('generic_name').strip()
+    label_name = request.form.get('label_name').strip()
+    unique_id = request.form.get('unique_id').strip()
+    strength = request.form.get('strength').strip()
+    form = request.form.get('form').strip()
+
+    if not unique_id:
+        return app.utility.xhr_response({'success':False}, 404)
 
     drug = app.models.Drug.query.filter(app.models.Drug.unique_id==unique_id).first()
     if not drug or (label_name == '' and drug.label_name != None) or (generic_name == ''):
         return app.utility.xhr_response({'success':False}, 404)
 
-    drug.strength = strength
-    drug.form = form
-    drug.edited = True
-
-    generic_name_as_key = drug.generic_name
-    drug.generic_name = generic_name
-    app.models.create_canonical_name(generic_name_as_key, generic_name, strength, form)
-
+    drug.set_listing_attributes(strength, form)
     if drug.label_name:
-        label_name_as_key = drug.label_name
-        drug.label_name = label_name
-        app.models.create_canonical_name(label_name_as_key, label_name, strength, form)
+        response = app.models.set_canonical_label_name(drug, label_name, generic_name, strength, form)
+    else:
+        response = app.models.set_canonical_generic_name(drug, generic_name, strength, form)
 
-    app.db.session.commit()
-    return app.utility.xhr_response({'success':True}, 200)
+    if response['success']:
+        if not 'deleted' in response:
+            drug.edited = True
+            app.db.session.commit()
+        return app.utility.xhr_response(response, 200)
+    return app.utility.xhr_response(response, 404)

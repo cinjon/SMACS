@@ -4,6 +4,7 @@ import random
 def declare_api():
     app.api.add_to_api('drug', app.models.Drug, ['GET'], primary_key='unique_id',
                        exclude_columns=['companies', 'id', 'creation_time'],
+                       preprocessors={'GET_MANY':[restless_preprocessor_edited]},
                        postprocessors={'GET_SINGLE':[restless_postprocessor_filter_listings]})
     app.api.add_to_api('drug-max', app.models.Drug, ['GET'],
                        include_columns=['generic_name', 'label_name'], results_per_page=None)
@@ -16,11 +17,16 @@ def declare_api():
                        postprocessors={'GET_MANY':[restless_postprocessor_filter_typeahead]})
     app.api.add_to_api('random-drugs', app.models.Drug, ['GET'],
                        include_columns=['generic_name', 'label_name'], results_per_page=None,
+                       preprocessors={'GET_MANY':[restless_preprocessor_edited]},
                        postprocessors={'GET_MANY':[restless_postprocessor_randomize]})
-    app.api.add_to_api('edit-drugs', app.models.Drug, ['GET'],
-                       include_columns=['listings', 'generic_name', 'label_name', 'unique_id'], results_per_page=20,
-                       postprocessors={'GET_MANY':[restless_postprocessor_strength_and_form]})
-
+    app.api.add_to_api('edit-drugs', app.models.Drug, ['GET'], results_per_page=50,
+                       include_columns=['listings', 'generic_name', 'label_name', 'unique_id'],
+                       preprocessors={'GET_MANY':[restless_preprocessor_unedited]},
+                       postprocessors={'GET_MANY':[
+                           restless_postprocessor_strength_and_form,
+                           restless_postprocessor_orderby_generic_name
+                           ]}
+                       )
 
 # Using the preprocessors instead of the filters caused a very large slowdown
 # when operating with results_per_page=None. So it's fine for most things,
@@ -31,7 +37,12 @@ def restless_preprocessor_labels(search_params=None, **kw):
 def restless_preprocessor_generics(search_params=None, **kw):
     _filter = dict(name='label_name', op='is_null')
     return app.api.restless_preprocessor(search_params, _filter, **kw)
-# def restless_preprocessor_limit(search_params=None
+def restless_preprocessor_edited(search_params=None, **kw):
+    _filter = dict(name='edited', op='==', val='True')
+    return app.api.restless_preprocessor(search_params, _filter, **kw)
+def restless_preprocessor_unedited(search_params=None, **kw):
+    _filter = dict(name='edited', op='==', val='False')
+    return app.api.restless_preprocessor(search_params, _filter, **kw)
 
 def restless_postprocessor_filter_typeahead(result=None, search_params=None, **kw):
     def get_type_of_typeahead(params):
@@ -89,3 +100,6 @@ def restless_postprocessor_strength_and_form(result=None, search_params=None, **
             drug['form'] = listings[0]['form']
             del drug['listings']
     result['objects'] = drugs
+
+def restless_postprocessor_orderby_generic_name(result=None, search_params=None, **kw):
+    result['objects'] = sorted(result['objects'], key=lambda d:d['generic_name'])
