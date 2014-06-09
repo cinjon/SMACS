@@ -86,12 +86,14 @@ class Drug(app.db.Model):
     companies = app.db.relationship('Company', secondary=drugs,
                                     backref=app.db.backref('drugs', lazy='dynamic'))
     listings = app.db.relationship('Listing', lazy='dynamic', backref='drug')
+    edited = app.db.Column(app.db.Boolean, index=True)
 
     def __init__(self, generic_name, label_name):
         self.generic_name = generic_name
         self.label_name = label_name
         self.unique_id = app.utility.generate_id()
         self.creation_time = app.utility.get_time()
+        self.edited = False
 
 def create_drug(generic_name, label_name):
     drug = app.models.Drug(generic_name, label_name)
@@ -109,23 +111,40 @@ class Listing(app.db.Model):
     creation_time = app.db.Column(app.db.DateTime)
     strength = app.db.Column(app.db.String(25))
     form = app.db.Column(app.db.String(25))
+    drug_id = app.db.Column(app.db.Integer, app.db.ForeignKey('drug.id'), index=True)
     ful = app.db.Column(app.db.Float)
     smac = app.db.Column(app.db.Float)
     proposed = app.db.Column(app.db.Float)
     state = app.db.Column(app.db.String(2), index=True)
     effective_date = app.db.Column(app.db.DateTime, index=True)
     file_found = app.db.Column(app.db.Text())
+    price_checked = app.db.Column(app.db.Boolean, index=True)
 
-    def __init__(self, strength, form, smac, effective_date, proposed, state, ful, file_found):
+    def __init__(self, strength, form, smac, effective_date, proposed, state, drug_id, ful, file_found):
         self.strength = strength
         self.form = form
         self.smac = smac
         self.effective_date = effective_date
+        self.drug_id = drug_id
         self.ful = ful
         self.state = state
         self.proposed = proposed
         self.file_found = file_found
         self.creation_time = app.utility.get_time()
+        self.price_checked = False
+
+class CanonicalNames(app.db.Model):
+    id = app.db.Column(app.db.Integer, primary_key=True)
+    name_as_key = app.db.Column(app.db.Text(), index=True, unique=True)
+    canonical_name = app.db.Column(app.db.Text())
+    strength = app.db.Column(app.db.String(25))
+    form = app.db.Column(app.db.String(25))
+
+    def __init__(self, name_as_key, canonical_name, strength, form):
+        self.name_as_key = name_as_key
+        self.canonical_name = canonical_name
+        self.strength = strength
+        self.form = form
 
 class Company(app.db.Model):
     id = app.db.Column(app.db.Integer, primary_key=True)
