@@ -166,7 +166,7 @@ def get_type_of_file(loc, line_words, drug_start):
 def merge_column_names(columns, next_line, type_file):
     # Merge the column names to form the right ones. Highly state dependent
     # and_group_rules is (column.title, next_column.title):(new_column_title, position_delta)
-    and_group_rules = {('Generic', 'Name'):('Generic Name', 1), ('Old', 'Smac'):('Old Smac', 1),
+    and_group_rules = {('Generic', 'Name'):('Generic Name', 1), ('Old', 'SMAC'):('Old Smac', 1),
                        ('Label', 'Name'):('Label Name', 1), ('Current', 'FUL'):('FUL', 1),
                        ('Current.', 'FUL'):('FUL', 1), ('Current', None):('SMAC', 0),
                        ('Current.', None):('SMAC', 0), ('Cgrint', 'CuSrl:ne:(t:lL'):('FUL', 0),
@@ -174,23 +174,25 @@ def merge_column_names(columns, next_line, type_file):
 
     def get_title_and_delta_from_and_rules(column, next_column):
         for group, result in and_group_rules.iteritems():
-            if column.title == group[0] and (not group[1] or next_column.title == group[1]):
+            if column.title.upper() == group[0].upper() and (not group[1] or next_column.title.upper() == group[1].upper()):
                 return result[0], result[1]
-        return None, None
+        return None, 0
     def get_title_from_prev_column(column, next_column, prev_title, next_line):
         if column.title == 'SMAC' and next_column.title == 'Notes':
             has_collision, text = app.process.utility.has_colliding_column(column, next_line)
             if has_collision:
-                return column.title + ' ' + text, 0
+                return column.title + ' ' + text
             elif prev_title == 'Current':
-                return 'Effective Date', 0
+                return 'Effective Date'
             elif prev_title == 'Current SMAC' or prev_title == 'SMAC': #column changed from CuSrl..
-                return 'Proposed SMAC', 0
+                return 'Proposed SMAC'
         else:
-            return column.title, 0
+            return column.title
 
     ret = []
-    for position in range(len(columns)):
+    position = -1
+    while(position < len(columns)):
+        position += 1
         column = columns[position]
         if position == len(columns) - 1:
             if column.title == 'SMAC' and 'Effective' in [w.txt for w in next_line]:
@@ -206,8 +208,8 @@ def merge_column_names(columns, next_line, type_file):
         next_column = columns[position+1]
         title, position_delta = get_title_and_delta_from_and_rules(column, next_column)
         if not title and position > 0:
-            title = get_title_from_prev_column(column, next_column,
-                                               columns[position-1].title, next_line)
+            title = get_title_from_prev_column(
+                column, next_column, columns[position-1].title, next_line)
             position_delta = 0
 
         position += position_delta
