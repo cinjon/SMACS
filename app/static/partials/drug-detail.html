@@ -1,32 +1,28 @@
-<div class="drug-title">
-  <h3>
+<div class="row drug-top-info">
+  <h3 class="drug-title">
     <span ng-show="hasLabelName">
       {{drug.label_name}} -&nbsp;
     </span>
     {{drug.generic_name}}
   </h3>
+  <select class="form-control drug-filters" ng-model="form" ng-options="form for form in forms"></select>
+  <select class="form-control drug-filters" ng-model="strength" ng-options="strength for strength in strengths"></select>
 </div>
 
-<div>
+<div class="row scroll">
   <table class="drug-listing-table">
     <tr class="drug-listing-row">
-      <th class="drug-listing-cell">Current Price</th>
+      <th class="drug-listing-cell">Price</th>
       <th class="drug-listing-cell">Effective Date</th>
       <th class="drug-listing-cell" ng-show="drug.hasProposed">Proposed Price</th>
       <th class="drug-listing-cell" ng-show="drug.hasFUL">FUL</th>
-      <th class="drug-listing-cell" ng-show="drug.hasForm">Form</th>
-      <th class="drug-listing-cell" ng-show="drug.hasStrength">Strength</th>
-      <th class="drug-listing-cell">File</th>
       <th class="drug-listing-cell">State</th>
     </tr>
-    <tr class="drug-listing-row" ng-repeat="listing in drug.listings | limitTo:20" ng-show="shortList">
+    <tr class="drug-listing-row" ng-repeat="listing in drug.listings | filter:strengthAndFormFilter" ng-show="shortList">
       <td class="drug-listing-cell">{{listing.price | round:2 | dollars}}</td>
       <td class="drug-listing-cell">{{listing.date | prettifyDate}}</td>
       <td class="drug-listing-cell" ng-show="drug.hasProposed">{{listing.proposed | round:2 | dollars}}</td>
       <td class="drug-listing-cell" ng-show="drug.hasFUL">{{listing.ful | round:2 | dollars}}</td>
-      <td class="drug-listing-cell" ng-show="drug.hasForm">{{listing.form}}</td>
-      <td class="drug-listing-cell" ng-show="drug.hasStrength">{{listing.strength}}</td>
-      <td class="drug-listing-cell">{{listing.file}}</td>
       <td class="drug-listing-cell">{{listing.state}}</td>
     </tr>
   </table>

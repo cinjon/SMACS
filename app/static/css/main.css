@@ -133,6 +133,27 @@
     margin-top: 10px;
 }
 
+.drug-top-info {
+    margin-bottom: 20px;
+}
+
+.drug-title {
+    float:left;
+}
+
+.drug-filters {
+    float:right;
+    margin-left:15px;
+    width:150px;
+    position:relative;
+    top:18px;
+}
+
+.scroll {
+    overflow:scroll;
+    height:610px;
+}
+
 .drug-display {
     height: 35px;
     border: 2px solid rgba(91, 194, 207, .5);

@@ -48,6 +48,14 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
       $scope.hasStrength = drug.hasStrength;
       $scope.hasLabelName = (drug.label_name != null);
       $scope.shortList = true;
+      $scope.strengths = _.uniq(drug.listings.map(function(listing) {return listing.strength}));
+      $scope.strength = $scope.strengths[0];
+      $scope.forms = _.uniq(drug.listings.map(function(listing) {return listing.form}));
+      $scope.form = $scope.forms[0];
+
+      $scope.strengthAndFormFilter = function(listing) {
+        return listing.form == $scope.form && listing.strength == $scope.strength;
+      }
     });
   })
   .controller('edit', function($scope, $http, limitToFilter, filterFilter) {
