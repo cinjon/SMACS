@@ -17,6 +17,10 @@ def declare_api():
     app.api.add_to_api('random-drugs', app.models.Drug, ['GET'],
                        include_columns=['generic_name', 'label_name'], results_per_page=None,
                        postprocessors={'GET_MANY':[restless_postprocessor_randomize]})
+    app.api.add_to_api('edit-drugs', app.models.Drug, ['GET'],
+                       include_columns=['listings', 'generic_name', 'label_name', 'unique_id'], results_per_page=20,
+                       postprocessors={'GET_MANY':[restless_postprocessor_strength_and_form]})
+
 
 # Using the preprocessors instead of the filters caused a very large slowdown
 # when operating with results_per_page=None. So it's fine for most things,
@@ -27,6 +31,7 @@ def restless_preprocessor_labels(search_params=None, **kw):
 def restless_preprocessor_generics(search_params=None, **kw):
     _filter = dict(name='label_name', op='is_null')
     return app.api.restless_preprocessor(search_params, _filter, **kw)
+# def restless_preprocessor_limit(search_params=None
 
 def restless_postprocessor_filter_typeahead(result=None, search_params=None, **kw):
     def get_type_of_typeahead(params):
@@ -71,3 +76,15 @@ def restless_postprocessor_randomize(result=None, search_params=None, **kw):
         drugs = [{'name':o[_type], 'type':_type} for o in result['objects'] if o.get(_type, None) != None]
     random.shuffle(drugs)
     result['objects'] = [{'type':drug['type'], 'name':drug['name'].title()} for drug in drugs[:number]]
+
+def restless_postprocessor_strength_and_form(result=None, search_params=None, **kw):
+    drugs = result['objects']
+    for drug in drugs:
+        listings = drug['listings']
+        if not listings or len(listings) == 0:
+            drug['strength'] = None
+            drug['form'] = None
+        else:
+            drug['strength'] = listings[0]['strength']
+            drug['form'] = listings[0]['form']
+    result['objects'] = drugs
