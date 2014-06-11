@@ -5,7 +5,7 @@ var drugForms = ['tablet', 'capsule', 'cream', 'drops', 'suspension',
                  'syringe', 'elixir', 'gel', 'powder', 'piggyback',
                  'shampoo', 'other'];
 
-angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngResource', 'ngRoute'])
+angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngResource', 'ngRoute', 'angularCharts'])
   .controller('landing', function($scope, $resource) {
     $scope.loginUser = function() {
       console.log('logging in user ' + $scope.email + ' : ' + $scope.password);
@@ -55,6 +55,48 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
 
       $scope.strengthAndFormFilter = function(listing) {
         return listing.form == $scope.form && listing.strength == $scope.strength;
+      }
+
+      $scope.data = {
+        series: ['Sales', 'Income', 'Expense'],
+        data : [{
+          x : "Jack",
+          y: [100,210, 384],
+          tooltip:"this is tooltip"
+          },
+                {
+                  x : "John",
+                  y: [300, 289, 456]
+                  },
+                {
+                  x : "Stacy",
+                  y: [351, 170, 255]
+                  },
+                {
+                  x : "Luke",
+                  y: [54, 341, 879]
+                  }]
+        }
+      $scope.chartType = 'line';
+
+      $scope.config = {
+        labels: false,
+        title : "Products",
+        legend : {
+          display: true,
+          position:'right'
+          },
+        click : function(d) {
+          $scope.messages.push('clicked!');
+          },
+        mouseover : function(d) {
+          $scope.messages.push('mouseover!');
+          },
+        mouseout : function(d) {
+          $scope.messages.push('mouseout!');
+        },
+        innerRadius: 0,
+        lineLegend: 'lineEnd',
       }
     });
   })

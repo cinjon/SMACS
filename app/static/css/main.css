@@ -180,6 +180,11 @@
     padding: 10px;
 }
 
+.drug-listing-chart #chart {
+    height: 400px;
+    width: 100%;
+}
+
 .drug-listing-row {
     margin-bottom:5px;
     height:25px;
