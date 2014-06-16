@@ -2,7 +2,7 @@
 
 angular.module('smacServices', ['ngResource'])
   .factory('Drug', function($resource) {
-    return $resource('/api/drug/:drug_id', {}, {
+    return $resource('/get-drug/:drug_id', {}, {
       query: {
 	method: 'GET',
 	params: {drug_id:''},
@@ -12,7 +12,7 @@ angular.module('smacServices', ['ngResource'])
   })
   .factory('subscriptionQuery', function($resource) {
     // Returns the current user's subscriptions
-    return $resource('/api/subscriptions', {}, {
+    return $resource('/subscriptions', {}, {
       query: {
         method: 'GET',
         isArray: true

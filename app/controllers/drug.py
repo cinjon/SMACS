@@ -1,6 +1,6 @@
 import app
 from sqlalchemy.sql import exists
-from flask import make_response, abort, jsonify, request
+from flask import make_response, abort, request
 
 @app.flask_app.route('/drug/<drug_id>')
 def drug(drug_id):
@@ -9,17 +9,17 @@ def drug(drug_id):
         return make_response(open('app/public/template/smacs/index.html').read())
     abort(404)
 
-@app.flask_app.route('/drug_unique_id/<drug_type>/<drug_name>')
+@app.flask_app.route('/drug-unique-id/<drug_type>/<drug_name>')
 def drug_unique_id(drug_type, drug_name):
      # Need to restrict this somehow so that only the site can access it and not a random scraper
-     if drug_type == 'generic_name':
+     if drug_type == 'generic':
          drug = app.models.Drug.query.filter(app.models.Drug.generic_name == drug_name.upper(),
                                              app.models.Drug.label_name == None).first()
-     elif drug_type == 'label_name':
+     elif drug_type == 'label':
          drug = app.models.Drug.query.filter(app.models.Drug.label_name == drug_name.upper()).first()
      if drug:
-         return jsonify({'unique_id':drug.unique_id})
-     return jsonify({'unique_id':''})
+         return app.utility.xhr_response({'unique_id':drug.unique_id}, 200)
+     return app.utility.xhr_response({'unique_id':''}, 404)
 
 @app.flask_app.route('/edit-drug', methods=['GET', 'POST'])
 def edit_drug():
@@ -42,7 +42,7 @@ def edit_drug():
     else:
         response = app.models.set_canonical_generic_name(drug, generic_name, strength, form)
 
-    if response['success']:
+    if response and response.get('success', False):
         if not 'deleted' in response:
             drug.edited = True
             app.db.session.commit()

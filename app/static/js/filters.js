@@ -1,6 +1,9 @@
-'use strict';
-
 /* Filters */
+round = function(input, precision) {
+  return input ?
+    parseFloat(input).toFixed(precision) :
+    "";
+}
 
 angular.module('smacFilters', [])
   .filter('prettifyDate', function() {
@@ -29,13 +32,14 @@ angular.module('smacFilters', [])
   })
   .filter("round", function () {
     return function(input, precision) {
-      return input ?
-        parseFloat(input).toFixed(precision) :
-        "";
+      return round(input, precision);
     };
   })
   .filter("dollars", function () {
     return function(input) {
-      return input ? "$" + input : "";
+      if (input.slice(0, 1) != '(') {
+        return input ? "$" + input : "";
+      }
+      return input;
     };
   });

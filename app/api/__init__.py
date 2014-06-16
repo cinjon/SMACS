@@ -19,5 +19,4 @@ def restless_preprocessor(search_params=None, filter=None, **kw):
     search_params['filters'].append(filter)
 
 def declare_api():
-    drugs.declare_api()
-    names.declare_api()
+    pass

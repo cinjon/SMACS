@@ -16,29 +16,30 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
   .controller('home', function($scope, $http, $location, limitToFilter) {
     $scope.showDrugList = true;
     $scope.handleSelection = function(item) {
-      return $http.get('/drug_unique_id/' + item.type + '/' + item.name, {}).then(function(result) {
+      return $http.get('/drug-unique-id/' + item.type + '/' + item.name, {}).then(function(result) {
         $location.url('/drug/' + result.data.unique_id);
       });
     };
     $scope.getGenerics = function(val) {
-      return $http.get('/api/typeahead-generics?q={"filters":[{"name":"label_name", "op":"is_null"}], "query":"' + val + '"}', {}).then(function(result) {
+      return $http.get('/typeahead/generic/' + val, {}).then(function(result) {
         return limitToFilter(result.data.objects, 10);
       });
     };
     $scope.getLabels = function(val) {
-      return $http.get('/api/typeahead-labels?q={"filters":[{"name":"label_name", "op":"is_not_null"}], "query":"' + val + '"}', {}).then(function(result) {
+      return $http.get('/typeahead/label/' + val, {}).then(function(result) {
         return limitToFilter(result.data.objects, 10);
       });
     };
-    $http.get('/api/random-drugs?q={"number":10, "type":"generic_name"}', {}).then(function(result) {
-      $scope.randomGenerics = result.data.objects;
+    $http.get('/get-random-drugs/generic/10', {}).then(function(result) {
+      $scope.randomGenerics = result.data.data;
     });
-    $http.get('/api/random-drugs?q={"number":10, "type":"label_name"}', {}).then(function(result) {
-      $scope.randomLabels = result.data.objects;
+    $http.get('/get-random-drugs/label/10', {}).then(function(result) {
+      $scope.randomLabels = result.data;
     });
   })
   .controller('drugDetail', function($scope, $routeParams, Drug) {
     var drugQuery = Drug.get({drug_id: $routeParams.drug_id}, function(drug) {
+      drug = drug.data;
       $scope.drug = drug;
       $scope.drug.label_name = title(drug.label_name);
       $scope.drug.generic_name = title(drug.generic_name);
@@ -48,11 +49,22 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
       $scope.hasStrength = drug.hasStrength;
       $scope.hasLabelName = (drug.label_name != null);
       $scope.shortList = true;
+
       $scope.strengths = _.uniq(drug.listings.map(function(listing) {return listing.strength}));
       $scope.strength = $scope.strengths[0];
       $scope.forms = _.uniq(drug.listings.map(function(listing) {return listing.form}));
       $scope.form = $scope.forms[0];
 
+      $scope.getPrice = function(listing) {
+        var price = '';
+        if (listing.smac && listing.smac != '') {
+          price += round(listing.smac, 2);
+        }
+        if (listing.proposed && listing.proposed != '') {
+          price += ' ($' + round(listing.proposed, 2) + '*)';
+        }
+        return price.trim();
+      }
       $scope.strengthAndFormFilter = function(listing) {
         return listing.form == $scope.form && listing.strength == $scope.strength;
       }
@@ -102,12 +114,12 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
   })
   .controller('edit', function($scope, $http, limitToFilter, filterFilter) {
     $scope.drugForms = capitalize_all(drugForms);
-    $http.get('/api/edit-drugs').then(function(result) {
+    $http.get('/get-edit-drugs').then(function(result) {
       $scope.drugs = result.data.objects;
       $scope.genericNames = get_field_from_drugs($scope.drugs, 'generic_name');
       $scope.labelNames = get_field_from_drugs($scope.drugs, 'label_name');
     });
-    $http.get('/api/typeahead-canonical-names', {}).then(function(result) {
+    $http.get('/typeahead-canonical-names', {}).then(function(result) {
       $scope.canonicalNames = result.data.objects;
       console.log($scope.canonicalNames);
     });

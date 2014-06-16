@@ -95,6 +95,10 @@ class Drug(app.db.Model):
         self.creation_time = app.utility.get_time()
         self.edited = False
 
+    def __dir__(self):
+        return ['creation_time', 'label_name', 'id', 'generic_name',
+                'companies', 'listings', 'edited', 'unique_id']
+
     def create_canonical_generic_match(self, canonical_name, strength, form):
         generic_name_as_key = self.generic_name
         self.generic_name = canonical_name
@@ -148,6 +152,10 @@ class Listing(app.db.Model):
         self.file_found = file_found
         self.creation_time = app.utility.get_time()
         self.price_checked = False
+
+    def __dir__(self):
+        return ['effective_date', 'form', 'ful', 'file_found',
+                'smac', 'state', 'strength', 'proposed']
 
 class CanonicalNames(app.db.Model):
     #This should be CanonicalName*****

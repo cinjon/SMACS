@@ -15,14 +15,12 @@
     <tr class="drug-listing-row">
       <th class="drug-listing-cell">Price</th>
       <th class="drug-listing-cell">Effective Date</th>
-      <th class="drug-listing-cell" ng-show="drug.hasProposed">Proposed Price</th>
       <th class="drug-listing-cell" ng-show="drug.hasFUL">FUL</th>
       <th class="drug-listing-cell">State</th>
     </tr>
     <tr class="drug-listing-row" ng-repeat="listing in drug.listings | filter:strengthAndFormFilter" ng-show="shortList">
-      <td class="drug-listing-cell">{{listing.price | round:2 | dollars}}</td>
-      <td class="drug-listing-cell">{{listing.date | prettifyDate}}</td>
-      <td class="drug-listing-cell" ng-show="drug.hasProposed">{{listing.proposed | round:2 | dollars}}</td>
+      <td class="drug-listing-cell">{{getPrice(listing) | dollars}}</td>
+      <td class="drug-listing-cell">{{listing.effective_date | prettifyDate}}</td>
       <td class="drug-listing-cell" ng-show="drug.hasFUL">{{listing.ful | round:2 | dollars}}</td>
       <td class="drug-listing-cell">{{listing.state}}</td>
     </tr>
