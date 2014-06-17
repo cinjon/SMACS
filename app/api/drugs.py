@@ -2,7 +2,12 @@ import app
 import random
 
 def filter_and_order_listings(listings):
-    return [{key:l.__dict__.get(key, '') for key in dir(l)} for l in sorted(listings, key=lambda listing:listing.effective_date, reverse=True)]
+    def parse_key_value(key, listing):
+        value = l.__dict__.get(key, '')
+        if key == 'effective_date' and value != '':
+            return [value.day, value.month, value.year]
+        return value
+    return [{key:parse_key_value(key, l) for key in dir(l)} for l in sorted(listings, key=lambda listing:listing.effective_date)]
 
 def check_for_key(listings, key):
     return any([l.__dict__.get(key) for l in listings])
@@ -21,7 +26,8 @@ def get_drug(drug_uid):
     ret['hasStrength'] = check_for_key(listings, 'strength')
     ret['label_name'] = drug.label_name
     ret['generic_name'] = drug.generic_name
-    return app.utility.xhr_response({'data':ret, 'success':True}, 200)
+
+    return app.utility.xhr_response({'drug':ret, 'success':True}, 200)
 
 @app.flask_app.route('/typeahead/<type_of_drug>/<user_input>')
 def typeahead_labels(type_of_drug, user_input):

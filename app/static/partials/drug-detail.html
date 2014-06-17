@@ -10,7 +10,15 @@
 </div>
 
 <div class="row">
-  <div class="col-md-6 scroll">
+  <div class="col-md-12 drug-listing-chart">
+    <div class="row">
+      <highchart id="chart1" config="drugChartConfig" series="drugChartConfig.series"></highchart>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-5 col-md-offset-1 scroll" ng-repeat="listings in strengthAndFormFilteredList">
   <table class="drug-listing-table">
     <tr class="drug-listing-row">
       <th class="drug-listing-cell">Price</th>
@@ -18,7 +26,7 @@
       <th class="drug-listing-cell" ng-show="drug.hasFUL">FUL</th>
       <th class="drug-listing-cell">State</th>
     </tr>
-    <tr class="drug-listing-row" ng-repeat="listing in drug.listings | filter:strengthAndFormFilter" ng-show="shortList">
+    <tr class="drug-listing-row" ng-repeat="listing in listings">
       <td class="drug-listing-cell">{{getPrice(listing) | dollars}}</td>
       <td class="drug-listing-cell">{{listing.effective_date | prettifyDate}}</td>
       <td class="drug-listing-cell" ng-show="drug.hasFUL">{{listing.ful | round:2 | dollars}}</td>
@@ -26,11 +34,4 @@
     </tr>
   </table>
   </div>
-
-  <div class="col-md-5 col-md-offset-1 drug-listing-chart">
-    <div class="row">
-      <div ac-chart="chartType" ac-data="data" ac-config="config" id="chart" class="chart"></div>
-    </div>
-  </div>
-
 </div>

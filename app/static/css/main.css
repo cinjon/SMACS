@@ -138,11 +138,13 @@
 }
 
 .drug-title {
+    padding-left: 15px;
+    padding-right: 100px;
     float:left;
 }
 
 .drug-filters {
-    float:right;
+    float:left;
     margin-left:15px;
     width:150px;
     position:relative;
@@ -183,6 +185,11 @@
 .drug-listing-chart #chart {
     height: 400px;
     width: 100%;
+}
+
+.drug-listing-chart {
+    margin-left: 75px;
+    margin-bottom: 50px;
 }
 
 .drug-listing-row {

@@ -5,7 +5,7 @@ var drugForms = ['tablet', 'capsule', 'cream', 'drops', 'suspension',
                  'syringe', 'elixir', 'gel', 'powder', 'piggyback',
                  'shampoo', 'other'];
 
-angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngResource', 'ngRoute', 'angularCharts'])
+angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngResource', 'ngRoute', 'highcharts-ng'])
   .controller('landing', function($scope, $resource) {
     $scope.loginUser = function() {
       console.log('logging in user ' + $scope.email + ' : ' + $scope.password);
@@ -38,8 +38,8 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
     });
   })
   .controller('drugDetail', function($scope, $routeParams, Drug) {
-    var drugQuery = Drug.get({drug_id: $routeParams.drug_id}, function(drug) {
-      drug = drug.data;
+    var drugQuery = Drug.get({drug_id: $routeParams.drug_id}, function(result) {
+      var drug = result.drug;
       $scope.drug = drug;
       $scope.drug.label_name = title(drug.label_name);
       $scope.drug.generic_name = title(drug.generic_name);
@@ -48,12 +48,17 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
       $scope.hasForm = drug.hasForm;
       $scope.hasStrength = drug.hasStrength;
       $scope.hasLabelName = (drug.label_name != null);
-      $scope.shortList = true;
 
       $scope.strengths = _.uniq(drug.listings.map(function(listing) {return listing.strength}));
       $scope.strength = $scope.strengths[0];
       $scope.forms = _.uniq(drug.listings.map(function(listing) {return listing.form}));
       $scope.form = $scope.forms[0];
+
+      var filteredList = filterByStrengthAndForm($scope.form, $scope.strength, drug.listings);
+      $scope.strengthAndFormFilteredList = splitArrayHalf(filteredList);
+      $scope.smacData = convertToData(filteredList, 'smac');
+      $scope.fulData = convertToData(filteredList, 'ful');
+      $scope.proposedData = convertToData(filteredList, 'proposed');
 
       $scope.getPrice = function(listing) {
         var price = '';
@@ -65,50 +70,59 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
         }
         return price.trim();
       }
-      $scope.strengthAndFormFilter = function(listing) {
-        return listing.form == $scope.form && listing.strength == $scope.strength;
-      }
 
-      $scope.data = {
-        series: ['Sales', 'Income', 'Expense'],
-        data : [{
-          x : "Jack",
-          y: [100,210, 384],
-          tooltip:"this is tooltip"
-          },
-                {
-                  x : "John",
-                  y: [300, 289, 456]
-                  },
-                {
-                  x : "Stacy",
-                  y: [351, 170, 255]
-                  },
-                {
-                  x : "Luke",
-                  y: [54, 341, 879]
-                  }]
-        }
-      $scope.chartType = 'line';
+      $scope.$watch('form', function(newValue, oldValue) {
+        var filteredList = filterByStrengthAndForm(newValue, $scope.strength, drug.listings);
+        $scope.strengthAndFormFilteredList = splitArrayHalf(filteredList);
+        $scope.smacData = convertToData(filteredList, 'smac');
+        $scope.fulData = convertToData(filteredList, 'ful');
+        $scope.proposedData = convertToData(filteredList, 'proposed');
+      });
+      $scope.$watch('strength', function(newValue, oldValue) {
+        var filteredList = filterByStrengthAndForm($scope.form, newValue, drug.listings);
+        $scope.strengthAndFormFilteredList = splitArrayHalf(filteredList);
+        $scope.smacData = convertToData(filteredList, 'smac');
+        $scope.fulData = convertToData(filteredList, 'ful');
+        $scope.proposedData = convertToData(filteredList, 'proposed');
+      });
 
-      $scope.config = {
-        labels: false,
-        title : "Products",
-        legend : {
-          display: true,
-          position:'right'
-          },
-        click : function(d) {
-          $scope.messages.push('clicked!');
-          },
-        mouseover : function(d) {
-          $scope.messages.push('mouseover!');
-          },
-        mouseout : function(d) {
-          $scope.messages.push('mouseout!');
+      $scope.drugChartConfig = {
+        options: {
+          chart: {
+            type: 'spline'
+          }
         },
-        innerRadius: 0,
-        lineLegend: 'lineEnd',
+        xAxis: {
+          type: 'datetime',
+          dateTimeLabelFormats: {
+            day: '%b %e',
+            week: '%b %e'
+          },
+          title: {
+            text: 'Date'
+          },
+        },
+        yAxis: {
+          title: {
+            text: 'Price ($)'
+          },
+          min: 0
+        },
+        series: [
+          {
+            name: 'State Maximum Acquired Cost',
+            data: $scope.smacData
+          },
+          {
+            name: 'Proposed',
+            data: $scope.proposedData
+          },
+          {
+            name: 'Federal Upper Limit',
+            data: $scope.fulData
+          }
+        ],
+        loading: false
       }
     });
   })
@@ -121,7 +135,6 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
     });
     $http.get('/typeahead-canonical-names', {}).then(function(result) {
       $scope.canonicalNames = result.data.objects;
-      console.log($scope.canonicalNames);
     });
     $scope.startsWith = function(canonicalName, viewValue) {
       return canonicalName.substr(0, viewValue.length).toUpperCase() == viewValue.toUpperCase();
@@ -138,8 +151,6 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
         $scope.labelNames.splice(index, 1);
         $scope.addToCanonicalNames(data, 'generic_name');
         $scope.addToCanonicalNames(data, 'label_name');
-        console.log(data);
-        console.log($scope.canonicalNames);
       });
     }
     $scope.addToCanonicalNames = function(data, key) {
@@ -213,5 +224,31 @@ var capitalize_all = function(arr) {
 var get_field_from_drugs = function(drugs, field) {
   return drugs.map(function(drug) {
     return drug[field];
+  });
+}
+
+var splitArrayHalf = function(arr) {
+  var len = arr.length;
+  var ret = [];
+  var i = 0;
+  var number = 2;
+  while (i < len) {
+    var size = Math.ceil((len - i) / number--);
+    ret.push(arr.slice(i, i += size));
+  }
+  return ret;
+}
+
+var filterByStrengthAndForm = function(form, strength, listings) {
+  return listings.filter(function(listing) {
+    return listing.form == form && listing.strength == strength;
+  });
+}
+
+var convertToData = function(listings, key) {
+  console.log(listings[0].effective_date);
+  return listings.map(function(listing) {
+    var date = listing.effective_date;
+    return [Date.UTC(date[2], date[1], date[0]), listing[key]];
   });
 }
