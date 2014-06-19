@@ -27,7 +27,7 @@
 
 .header-push {
     height: 394px;
-    background-color: rgba(91, 194, 207, .5);
+    background-color: rgba(9, 194, 207, .5); /* rgba(91, 194, 207, .5); */
     border:2px solid rgba(255,255,255,.5);
     border-radius:40px;
 }
@@ -144,11 +144,23 @@
 }
 
 .drug-filters {
-    float:left;
+    float:right;
     margin-left:15px;
+    margin-right:12px;
     width:150px;
     position:relative;
     top:18px;
+}
+
+.middle-warning {
+    margin:auto;
+    width:50%;
+    font-size: 24px;
+    color: rgba(9, 14, 207, .5);
+}
+
+.no-drug-warning {
+    margin-top:70px;
 }
 
 .scroll {
@@ -188,7 +200,6 @@
 }
 
 .drug-listing-chart {
-    margin-left: 75px;
     margin-bottom: 50px;
 }
 

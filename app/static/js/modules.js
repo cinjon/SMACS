@@ -48,6 +48,7 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
       $scope.hasForm = drug.hasForm;
       $scope.hasStrength = drug.hasStrength;
       $scope.hasLabelName = (drug.label_name != null);
+      $scope.hasDrugCombination = true;
 
       $scope.strengths = _.uniq(drug.listings.map(function(listing) {return listing.strength}));
       $scope.strength = $scope.strengths[0];
@@ -55,11 +56,16 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
       $scope.form = $scope.forms[0];
 
       var filteredList = filterByStrengthAndForm($scope.form, $scope.strength, drug.listings);
-      $scope.strengthAndFormFilteredList = splitArrayHalf(filteredList);
-      $scope.smacData = convertToData(filteredList, 'smac');
-      $scope.fulData = convertToData(filteredList, 'ful');
-      $scope.proposedData = convertToData(filteredList, 'proposed');
+      $scope.strengthAndFormFilteredLists = splitArrayHalf(filteredList);
+      $scope.series = make_series(filteredList)
 
+      // lol. Change this to be more angular
+      $scope.getTableClass = function(num) {
+        if (num == 0) {
+          return "col-md-5 scroll"
+        }
+        return "col-md-5 col-md-offset-2 scroll"
+      };
       $scope.getPrice = function(listing) {
         var price = '';
         if (listing.smac && listing.smac != '') {
@@ -71,59 +77,33 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
         return price.trim();
       }
 
+      $scope.getDateFromListing = function(dateArray) {
+        return Date.UTC(dateArray[2], dateArray[1], dateArray[0]);
+      };
+
       $scope.$watch('form', function(newValue, oldValue) {
         var filteredList = filterByStrengthAndForm(newValue, $scope.strength, drug.listings);
-        $scope.strengthAndFormFilteredList = splitArrayHalf(filteredList);
-        $scope.smacData = convertToData(filteredList, 'smac');
-        $scope.fulData = convertToData(filteredList, 'ful');
-        $scope.proposedData = convertToData(filteredList, 'proposed');
+        if (filteredList.length == 0) {
+          $scope.hasDrugCombination = false;
+        } else {
+          $scope.hasDrugCombination = true;
+          $scope.strengthAndFormFilteredLists = splitArrayHalf(filteredList);
+          $scope.series = make_series(filteredList);
+        }
       });
       $scope.$watch('strength', function(newValue, oldValue) {
         var filteredList = filterByStrengthAndForm($scope.form, newValue, drug.listings);
-        $scope.strengthAndFormFilteredList = splitArrayHalf(filteredList);
-        $scope.smacData = convertToData(filteredList, 'smac');
-        $scope.fulData = convertToData(filteredList, 'ful');
-        $scope.proposedData = convertToData(filteredList, 'proposed');
+        if (filteredList.length == 0) {
+          $scope.hasDrugCombination = false;
+        } else {
+          $scope.hasDrugCombination = true;
+          $scope.strengthAndFormFilteredLists = splitArrayHalf(filteredList);
+          $scope.series = make_series(filteredList);
+        }
       });
-
-      $scope.drugChartConfig = {
-        options: {
-          chart: {
-            type: 'spline'
-          }
-        },
-        xAxis: {
-          type: 'datetime',
-          dateTimeLabelFormats: {
-            day: '%b %e',
-            week: '%b %e'
-          },
-          title: {
-            text: 'Date'
-          },
-        },
-        yAxis: {
-          title: {
-            text: 'Price ($)'
-          },
-          min: 0
-        },
-        series: [
-          {
-            name: 'State Maximum Acquired Cost',
-            data: $scope.smacData
-          },
-          {
-            name: 'Proposed',
-            data: $scope.proposedData
-          },
-          {
-            name: 'Federal Upper Limit',
-            data: $scope.fulData
-          }
-        ],
-        loading: false
-      }
+      $scope.$watch('series', function(newValue, oldValue) {
+        $scope.drugChartConfig = make_chart(newValue);
+      });
     });
   })
   .controller('edit', function($scope, $http, limitToFilter, filterFilter) {
@@ -246,9 +226,56 @@ var filterByStrengthAndForm = function(form, strength, listings) {
 }
 
 var convertToData = function(listings, key) {
-  console.log(listings[0].effective_date);
   return listings.map(function(listing) {
     var date = listing.effective_date;
     return [Date.UTC(date[2], date[1], date[0]), listing[key]];
   });
+}
+
+var make_series = function(listings) {
+  return [
+    {
+      name: 'State Maximum Acquired Cost',
+      data: convertToData(listings, 'smac')
+    },
+    {
+      name: 'Proposed',
+      data: convertToData(listings, 'proposed')
+    },
+    {
+      name: 'Federal Upper Limit',
+      data: convertToData(listings, 'ful')
+    }
+  ]
+}
+
+var make_chart = function(series) {
+  return {
+    options: {
+      chart: {
+        type: 'spline'
+      }
+    },
+    xAxis: {
+      type: 'datetime',
+      dateTimeLabelFormats: {
+        day: '%b %e',
+        week: '%b %e'
+      },
+      title: {
+        text: 'Date'
+      },
+    },
+    title: {
+      text: ''
+    },
+    yAxis: {
+      title: {
+        text: 'Price ($)'
+      },
+      min: 0
+    },
+    series: series,
+    loading: false
+  }
 }

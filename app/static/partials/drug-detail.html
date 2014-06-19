@@ -9,29 +9,41 @@
   <select class="form-control drug-filters" ng-model="strength" ng-options="strength for strength in strengths"></select>
 </div>
 
-<div class="row">
-  <div class="col-md-12 drug-listing-chart">
-    <div class="row">
-      <highchart id="chart1" config="drugChartConfig" series="drugChartConfig.series"></highchart>
+<div ng-show="!hasDrugCombination">
+  <div class="row">
+    <div class="col-md-12 no-drug-warning">
+      <h1 class="middle-warning">This drug does not sell in that combination</h1>
     </div>
   </div>
 </div>
 
-<div class="row">
-  <div class="col-md-5 col-md-offset-1 scroll" ng-repeat="listings in strengthAndFormFilteredList">
-  <table class="drug-listing-table">
-    <tr class="drug-listing-row">
-      <th class="drug-listing-cell">Price</th>
-      <th class="drug-listing-cell">Effective Date</th>
-      <th class="drug-listing-cell" ng-show="drug.hasFUL">FUL</th>
-      <th class="drug-listing-cell">State</th>
-    </tr>
-    <tr class="drug-listing-row" ng-repeat="listing in listings">
-      <td class="drug-listing-cell">{{getPrice(listing) | dollars}}</td>
-      <td class="drug-listing-cell">{{listing.effective_date | prettifyDate}}</td>
-      <td class="drug-listing-cell" ng-show="drug.hasFUL">{{listing.ful | round:2 | dollars}}</td>
-      <td class="drug-listing-cell">{{listing.state}}</td>
-    </tr>
-  </table>
+<div ng-show="hasDrugCombination">
+  <div class="row">
+    <div class="col-md-12 drug-listing-chart">
+      <div class="row">
+        <highchart id="chart1" config="drugChartConfig" series="drugChartConfig.series"></highchart>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div ng-repeat="listings in strengthAndFormFilteredLists">
+      <div ng-class="getTableClass($index)">
+        <table class="drug-listing-table">
+          <tr class="drug-listing-row">
+            <th class="drug-listing-cell">Price</th>
+            <th class="drug-listing-cell">Effective Date</th>
+            <th class="drug-listing-cell" ng-show="drug.hasFUL">FUL</th>
+            <th class="drug-listing-cell">State</th>
+          </tr>
+          <tr class="drug-listing-row" ng-repeat="listing in listings">
+            <td class="drug-listing-cell">{{getPrice(listing) | dollars}}</td>
+            <td class="drug-listing-cell">{{getDateFromListing(listing.effective_date) | prettifyDate}}</td>
+            <td class="drug-listing-cell" ng-show="drug.hasFUL">{{listing.ful | round:2 | dollars}}</td>
+            <td class="drug-listing-cell">{{listing.state}}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
