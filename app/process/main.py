@@ -83,6 +83,8 @@ def process_from_hocr(state):
     if not directory or not _process:
         return
 
+    canonical_names = {c.name_as_key:[c.canonical_name, c.strength, c.form] for c in app.models.CanonicalNames.query.all()}
+
     directory += '/hocr/'
     master_assignments = {}
     for root, dirs, files in os.walk(directory): #each dir is a diff pdf
@@ -98,7 +100,8 @@ def process_from_hocr(state):
                 continue
             absolute_path = root + '/' + f
             try:
-                page_assignments, date, columns, type_file = _process(absolute_path, date, columns, type_file)
+                page_assignments, date, columns, type_file = _process(
+                    absolute_path, canonical_names, date, columns, type_file)
             except Exception, e:
                 print 'Error: %s' % absolute_path
                 traceback.print_exc()

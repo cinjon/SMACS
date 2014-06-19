@@ -11,7 +11,7 @@ parent_directory = os.path.dirname(os.path.realpath(__file__))
 documents = parent_directory + '/documents'
 header_max_lines = 10
 
-def process(loc, date=None, columns=None, type_file=None):
+def process(loc, canonical_names, date=None, columns=None, type_file=None):
     # Runs the processing for IL
     # loc is a file location
     # date is a datetime object, passed in to the later html files in an hocr dir after processing the first
@@ -37,9 +37,11 @@ def process(loc, date=None, columns=None, type_file=None):
         return [], None, None, None
 
     if type_file == 'generic' or type_file == 'proposed':
-        processed = process_generic_page(line_words, drug_start, columns, date)
+        processed = process_generic_page(
+            line_words, drug_start, columns, date, canonical_names)
     elif type_file == 'label':
-        processed = process_label_page(line_words, drug_start, columns, date)
+        processed = process_label_page(
+            line_words, drug_start, columns, date, canonical_names)
     else:
         print 'Wtf? no processed to speak of: %s' % loc
         processed = []
@@ -254,7 +256,7 @@ forms = ['tablet', 'capsule', 'cream', 'drops', 'suspension',
          'vial', 'spray', 'ointment', 'lotion', 'syrup',
          'syringe', 'elixir', 'gel', 'powder', 'piggyback',
          'shampoo']
-def get_drug_information_from_name_words(generic_words, label_words):
+def get_drug_information_from_name_words(generic_words, label_words, canonical_names):
     def get_name_and_strength_of_drug(text):
         # returning the full text though because slicing off the backend isn't reliable atm.
         match = app.process.regex.dose_regex.match(text.lower())
@@ -282,24 +284,31 @@ def get_drug_information_from_name_words(generic_words, label_words):
                 return form.title()
         return None
 
-    generic_word_text = ' '.join([w.txt for w in generic_words])
-    form = get_form_of_drug(generic_word_text)
+    def get_information(words):
+        if not words:
+            return None, None, None
+        word_text = ' '.join([w.txt for w in words])
+        if word_text in canonical_names:
+            name, strength, form = canonical_names[word_text]
+        else:
+            name, strength = get_name_and_strength_of_drug(word_text)
+            form = get_form_of_drug(word_text)
+        return name, strength, form
 
-    # Get generic name and strength
-    generic_name, strength = get_name_and_strength_of_drug(generic_word_text)
+    generic_name, generic_strength, generic_form = get_information(generic_words)
+    label_name, label_strength, label_form = get_information(label_words)
 
-    # Get label name if necessary. Supply a strength if not already found
-    label_name = None
-    if label_words:
-        label_name, label_strength = get_name_and_strength_of_drug(' '.join([w.txt for w in label_words]))
-        strength = strength or label_strength
+    if label_words and (generic_strength != label_strength or generic_form != label_form):
+        print 'Differing drug info ... Generic Name: %s, Label Name: %s / GStrength: %s, LStrength: %s / GForm: %s, LForm: %s' % (generic_name, label_name, generic_strength, label_strength, generic_form, label_form)
 
+    strength = generic_strength or label_strength or '?'
+    form = generic_form or label_form or '?'
     return generic_name, label_name, form, strength
 
-def make_drug_line_dicts(label_names, generic_names, lines, columns, date):
+def make_drug_line_dicts(label_names, generic_names, lines, columns, date, canonical_names):
     ret = []
     for pos, line in enumerate(lines):
-        generic_name, label_name, form, strength = get_drug_information_from_name_words(generic_names[pos], label_names[pos])
+        generic_name, label_name, form, strength = get_drug_information_from_name_words(generic_names[pos], label_names[pos], canonical_names)
         assignment = {'Generic Name':generic_name, 'Form':form, 'Strength':strength}
         if label_name:
             assignment['Label Name'] = label_name
@@ -313,7 +322,7 @@ def make_drug_line_dicts(label_names, generic_names, lines, columns, date):
         ret.append(assignment)
     return ret
 
-def process_label_page(line_words, drug_start, columns, date):
+def process_label_page(line_words, drug_start, columns, date, canonical_names):
     label_names = []
     generic_names = []
     drug_lines = []
@@ -344,10 +353,11 @@ def process_label_page(line_words, drug_start, columns, date):
             label_names.append(label_name)
             generic_names.append(generic_name)
             drug_lines.append(line)
-    return make_drug_line_dicts(label_names, generic_names, drug_lines, columns, date)
+    return make_drug_line_dicts(
+        label_names, generic_names, drug_lines, columns, date, canonical_names)
 
 #TODO: Refactor the shit out of this.
-def process_generic_page(line_words, drug_start, columns, date):
+def process_generic_page(line_words, drug_start, columns, date, canonical_names):
     line_names = []
     drug_lines = []
 
@@ -372,4 +382,4 @@ def process_generic_page(line_words, drug_start, columns, date):
         else:
             line_names.append(name)
             drug_lines.append(line)
-    return make_drug_line_dicts([[] for i in range(len(line_names))], line_names, drug_lines, columns, date)
+    return make_drug_line_dicts([[] for i in range(len(line_names))], line_names, drug_lines, columns, date, canonical_names)
