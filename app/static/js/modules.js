@@ -12,27 +12,34 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
     }
   })
   .controller('about', function($scope) {
+
   })
   .controller('home', function($scope, $http, $location, limitToFilter) {
-    $scope.showDrugList = true;
+    $scope.showGenerics = true;
+    $scope.showLabels = true;
+
     $scope.handleSelection = function(item) {
       return $http.get('/drug-unique-id/' + item.type + '/' + item.name, {}).then(function(result) {
         $location.url('/drug/' + result.data.unique_id);
       });
     };
+
     $scope.getGenerics = function(val) {
       return $http.get('/typeahead/generic/' + val, {}).then(function(result) {
-        return limitToFilter(result.data.objects, 10);
+        return limitToFilter(result.data.data, 10);
       });
     };
+
     $scope.getLabels = function(val) {
       return $http.get('/typeahead/label/' + val, {}).then(function(result) {
-        return limitToFilter(result.data.objects, 10);
+        return limitToFilter(result.data.data, 10);
       });
     };
+
     $http.get('/get-random-drugs/generic/10', {}).then(function(result) {
       $scope.randomGenerics = result.data.data;
     });
+
     $http.get('/get-random-drugs/label/10', {}).then(function(result) {
       $scope.randomLabels = result.data;
     });
@@ -41,12 +48,7 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
     var drugQuery = Drug.get({drug_id: $routeParams.drug_id}, function(result) {
       var drug = result.drug;
       $scope.drug = drug;
-      $scope.drug.label_name = title(drug.label_name);
-      $scope.drug.generic_name = title(drug.generic_name);
       $scope.hasProposed = drug.hasProposed;
-      $scope.hasFUL = drug.hasFUL;
-      $scope.hasForm = drug.hasForm;
-      $scope.hasStrength = drug.hasStrength;
       $scope.hasLabelName = (drug.label_name != null);
       $scope.hasDrugCombination = true;
 
@@ -109,12 +111,14 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
   .controller('edit', function($scope, $http, limitToFilter, filterFilter) {
     $scope.drugForms = capitalize_all(drugForms);
     $http.get('/get-edit-drugs').then(function(result) {
-      $scope.drugs = result.data.objects;
+      $scope.drugs = result.data.data;
       $scope.genericNames = get_field_from_drugs($scope.drugs, 'generic_name');
       $scope.labelNames = get_field_from_drugs($scope.drugs, 'label_name');
+      console.log($scope.genericNames);
+      console.log($scope.labelNames);
     });
     $http.get('/typeahead-canonical-names', {}).then(function(result) {
-      $scope.canonicalNames = result.data.objects;
+      $scope.canonicalNames = result.data.data;
     });
     $scope.startsWith = function(canonicalName, viewValue) {
       return canonicalName.substr(0, viewValue.length).toUpperCase() == viewValue.toUpperCase();

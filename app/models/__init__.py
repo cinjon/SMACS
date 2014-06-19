@@ -157,6 +157,9 @@ class Listing(app.db.Model):
         return ['effective_date', 'form', 'ful', 'file_found',
                 'smac', 'state', 'strength', 'proposed']
 
+    def get(self, key, default=None):
+        return self.__dict__.get(key, default)
+
 class CanonicalNames(app.db.Model):
     #This should be CanonicalName*****
     id = app.db.Column(app.db.Integer, primary_key=True)

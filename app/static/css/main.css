@@ -67,10 +67,19 @@
     text-align:center;
 }
 
+.home-search {
+    text-align:center;
+    height:49px;
+    margin: 20px 0 10px 0;
+    font-size: 18px;
+    border: 4px solid rgba(91, 194, 207, .5);
+    outline: none;
+}
+
 .home-headline {
     padding: 10px;
     font-size: 18px;
-    margin: 20px 0 10px 0;
+    margin: 20px 0 0 0;
     border: 4px solid rgba(91, 194, 207, .5);
     outline: none;
     text-align:center;
@@ -113,7 +122,7 @@
 }
 
 .wide-input {
-    width: 500px;
+    width: 450px;
 }
 
 .half-wide-input {
@@ -130,7 +139,7 @@
 }
 
 .drug-list {
-    margin-top: 10px;
+    margin-top: 40px;
 }
 
 .drug-top-info {

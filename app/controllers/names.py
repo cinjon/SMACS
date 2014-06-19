@@ -2,6 +2,4 @@ import app
 
 @app.flask_app.route('/typeahead-canonical-names')
 def typeahead_canonical_names():
-    ds = app.models.CanonicalNames.query.with_entities(
-        app.models.CanonicalNames.canonical_name).all()
-    return list(set(d['canonical_name'] for d in ds))
+    return app.utility.xhr_response({'data':list(set(c.canonical_name for c in app.models.CanonicalNames.query.all()))}, 200)
