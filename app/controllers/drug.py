@@ -44,7 +44,8 @@ def edit_drug():
 
     if response and response.get('success', False):
         if not 'deleted' in response:
-            drug.edited = True
+            drug.generic_edited = True
+            drug.label_edited = response.get('label_edited', False) or drug.label_edited
             app.db.session.commit()
         return app.utility.xhr_response(response, 200)
     return app.utility.xhr_response(response, 404)
@@ -85,13 +86,12 @@ def typeahead(type_of_drug, user_input):
     user_input = user_input.lower()
     if type_of_drug == 'label':
         ds = app.models.Drug.query.filter(
-            app.models.Drug.label_name != None, app.models.Drug.edited == True).all()
+            app.models.Drug.label_name != None, app.models.Drug.label_edited == True).all()
         data = [{'name':d.label_name, 'unique_id':d.unique_id} for d in ds if check_tokens_for_input(d.label_name.lower(), user_input)]
     elif type_of_drug == 'generic':
         ds = app.models.Drug.query.filter(
-            app.models.Drug.label_name == None, app.models.Drug.edited == True).all()
+            app.models.Drug.label_name == None, app.models.Drug.generic_edited == True).all()
         data = [{'name':d.generic_name, 'unique_id':d.unique_id} for d in ds if check_tokens_for_input(d.generic_name.lower(), user_input)]
-    print data[:5]
     if data and len(data) > 0:
         return app.utility.xhr_response({'success':True, 'data':data}, 200)
     return app.utility.xhr_response({'success':False}, 400)
@@ -102,14 +102,14 @@ def get_random_drugs(type_of_drug, number):
     if type_of_drug == 'generic':
         ds = [
             {'name':d.generic_name, 'type':'generic'} for d in app.models.Drug.query.filter(
-                app.models.Drug.edited == True,
+                app.models.Drug.generic_edited == True,
                 app.models.Drug.label_name == None
                 ).all()
             ]
     elif type_of_drug == 'label':
         ds = [
             {'name':d.label_name, 'type':'label'} for d in app.models.Drug.query.filter(
-                app.models.Drug.edited == True,
+                app.models.Drug.label_edited == True,
                 app.models.Drug.label_name != None
                 ).all()
             ]
@@ -120,12 +120,13 @@ def get_random_drugs(type_of_drug, number):
 def get_edit_drugs():
     # order by name
     ds = app.models.Drug.query.filter(
-        app.models.Drug.edited == False
+        app.models.Drug.generic_edited == False,
+        app.models.Drug.label_name != None
         ).order_by(app.models.Drug.generic_name).limit(50)
     ds = [{
         'label_name':d.label_name, 'generic_name':d.generic_name,
         'strength':get_drug_key_from_listing(d, 'strength'),
-        'form':get_drug_key_from_listing(d, 'form')
+        'form':get_drug_key_from_listing(d, 'form'), 'unique_id':d.unique_id
         } for d in ds]
     return app.utility.xhr_response({'success':True, 'data':ds}, 200)
 

@@ -7,13 +7,15 @@ import traceback
 ########
 
 def do_all_processing_for_state(state):
+    canonical_names = {c.name_as_key:[c.canonical_name, c.strength, c.form] for c in app.models.CanonicalNames.query.all()}
+
     try:
         print 'Downloading files from ' + state
         download_files_from_state(state)
         print 'Completed downloading files for ' + state
         process_from_src_to_hocr(state)
         print 'Completed processing files from src to hocr for ' + state
-        failed, no_generics = process_from_hocr_to_db(state)
+        failed, no_generics = process_from_hocr_to_db(state, canonical_names)
         print 'Completed processing to DB for ' + state
         print '*** Failed Listings ***'
         print failed
@@ -76,14 +78,12 @@ def process_from_src_to_hocr(state):
             app.process.ocr.tesseract_png_to_hocr(png, hocr, png_f)
             app.process.utility.done_file(png, png_f)
 
-def process_from_hocr(state):
+def process_from_hocr(state, canonical_names={}):
     # Processes files in hocr and returns the parsed listings
     directory = get_directory_from_state(state)
     _process = get_process_function_from_state(state)
     if not directory or not _process:
         return
-
-    canonical_names = {c.name_as_key:[c.canonical_name, c.strength, c.form] for c in app.models.CanonicalNames.query.all()}
 
     directory += '/hocr/'
     master_assignments = {}
@@ -126,7 +126,9 @@ def _process_from_hocr_to_db(file_assignments, state):
         print f
         for assignment in assignments:
             generic_name = assignment.get('Generic Name')
+            generic_edited = assignment.get('genericEdited', False)
             label_name = assignment.get('Label Name')
+            label_edited = assignment.get('labelEdited', False)
 
             if not generic_name and not label_name:
                 if f not in no_names:
@@ -134,7 +136,8 @@ def _process_from_hocr_to_db(file_assignments, state):
                 no_names[f].append(assignment)
                 continue
 
-            drug = app.models.get_or_create_drug(generic_name, label_name)
+            drug = app.models.get_or_create_drug(generic_name, label_name,
+                                                 generic_edited, label_edited)
             try:
                 listing = app.models.Listing(
                     effective_date=assignment.get('Date'),
@@ -158,8 +161,8 @@ def _process_from_hocr_to_db(file_assignments, state):
         sum([len(k) for k in failed_listings.values()]), sum([len(k) for k in no_names.values()]))
     return failed_listings, no_names
 
-def process_from_hocr_to_db(state):
-    file_assignments = process_from_hocr(state)
+def process_from_hocr_to_db(state, canonical_names={}):
+    file_assignments = process_from_hocr(state, canonical_names)
     if not file_assignments or len(file_assignments) == 0:
         print "No File Assignments. Did you get the state right? --> %s" % state
         return

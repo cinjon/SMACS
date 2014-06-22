@@ -86,18 +86,20 @@ class Drug(app.db.Model):
     companies = app.db.relationship('Company', secondary=drugs,
                                     backref=app.db.backref('drugs', lazy='dynamic'))
     listings = app.db.relationship('Listing', lazy='dynamic', backref='drug')
-    edited = app.db.Column(app.db.Boolean, index=True)
+    generic_edited = app.db.Column(app.db.Boolean, index=True)
+    label_edited = app.db.Column(app.db.Boolean, index=True)
 
-    def __init__(self, generic_name, label_name):
+    def __init__(self, generic_name, label_name, generic_edited=False, label_edited=False):
         self.generic_name = generic_name
         self.label_name = label_name
         self.unique_id = app.utility.generate_id()
         self.creation_time = app.utility.get_time()
-        self.edited = False
+        self.generic_edited = generic_edited
+        self.label_edited = label_edited
 
     def __dir__(self):
         return ['creation_time', 'label_name', 'id', 'generic_name',
-                'companies', 'listings', 'edited', 'unique_id']
+                'companies', 'listings', 'generic_edited', 'label_edited', 'unique_id']
 
     def create_canonical_generic_match(self, canonical_name, strength, form):
         generic_name_as_key = self.generic_name
@@ -115,16 +117,16 @@ class Drug(app.db.Model):
             listing.form = form
         app.db.session.commit()
 
-def create_drug(generic_name, label_name):
-    drug = app.models.Drug(generic_name, label_name)
+def create_drug(generic_name, label_name, generic_edited, label_edited):
+    drug = app.models.Drug(generic_name, label_name, generic_edited, label_edited)
     app.db.session.add(drug)
     return drug
 
-def get_or_create_drug(generic_name, label_name):
+def get_or_create_drug(generic_name, label_name, generic_edited, label_edited):
     # Drug is given by generic_name and label_name, possible None for either
     drug = app.models.Drug.query.filter(app.models.Drug.generic_name == generic_name,
                                         app.models.Drug.label_name == label_name).first()
-    return drug or create_drug(generic_name, label_name)
+    return drug or create_drug(generic_name, label_name, generic_edited, label_edited)
 
 class Listing(app.db.Model):
     id = app.db.Column(app.db.Integer, primary_key=True)
@@ -163,7 +165,7 @@ class Listing(app.db.Model):
 class CanonicalNames(app.db.Model):
     #This should be CanonicalName*****
     id = app.db.Column(app.db.Integer, primary_key=True)
-    name_as_key = app.db.Column(app.db.Text(), index=True, unique=True)
+    name_as_key = app.db.Column(app.db.Text(), index=True)
     canonical_name = app.db.Column(app.db.Text())
     strength = app.db.Column(app.db.String(25))
     form = app.db.Column(app.db.String(25))
@@ -222,6 +224,7 @@ def set_canonical_label_name(drug, canonical_label_name, canonical_generic_name,
         response['success'] = True
         response['generic_name'] = canonical_generic_name
         response['label_name'] = canonical_label_name
+        response['label_edited'] = True
         return response
     except Exception, e:
         print e
@@ -229,9 +232,12 @@ def set_canonical_label_name(drug, canonical_label_name, canonical_generic_name,
         return {'success':False}
 
 def create_canonical_name(name_as_key, canonical_name, strength, form):
-    name = app.models.CanonicalNames(
-        name_as_key, canonical_name, strength, form)
-    app.db.session.add(name)
+    name = app.models.CanonicalNames.query.filter(app.models.CanonicalNames.name_as_key == name_as_key).first()
+    if not name:
+        name = app.models.CanonicalNames(
+            name_as_key, canonical_name, strength, form)
+        app.db.session.add(name)
+        app.db.session.commit()
     return name
 
 class Company(app.db.Model):

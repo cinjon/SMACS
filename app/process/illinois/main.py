@@ -286,32 +286,40 @@ def get_drug_information_from_name_words(generic_words, label_words, canonical_n
 
     def get_information(words):
         if not words:
-            return None, None, None
+            return None, None, None, None
         word_text = ' '.join([w.txt for w in words])
         if word_text in canonical_names:
             name, strength, form = canonical_names[word_text]
+            edited = True
         else:
             name, strength = get_name_and_strength_of_drug(word_text)
             form = get_form_of_drug(word_text)
-        return name, strength, form
+            edited = False
+        return name, strength, form, edited
 
-    generic_name, generic_strength, generic_form = get_information(generic_words)
-    label_name, label_strength, label_form = get_information(label_words)
+    def has_different(_generic, _label):
+        return _generic and _label and _generic != _label
 
-    if label_words and (generic_strength != label_strength or generic_form != label_form):
+    generic_name, generic_strength, generic_form, generic_edited = get_information(generic_words)
+    label_name, label_strength, label_form, label_edited = get_information(label_words)
+
+    if label_name and (has_different(generic_strength, label_strength) or has_different(generic_form, label_form)):
         print 'Differing drug info ... Generic Name: %s, Label Name: %s / GStrength: %s, LStrength: %s / GForm: %s, LForm: %s' % (generic_name, label_name, generic_strength, label_strength, generic_form, label_form)
 
     strength = generic_strength or label_strength or '?'
     form = generic_form or label_form or '?'
-    return generic_name, label_name, form, strength
+    return generic_name, label_name, form, strength, generic_edited, label_edited
 
 def make_drug_line_dicts(label_names, generic_names, lines, columns, date, canonical_names):
     ret = []
     for pos, line in enumerate(lines):
-        generic_name, label_name, form, strength = get_drug_information_from_name_words(generic_names[pos], label_names[pos], canonical_names)
-        assignment = {'Generic Name':generic_name, 'Form':form, 'Strength':strength}
+        generic_name, label_name, form, strength, generic_edited, label_edited = get_drug_information_from_name_words(
+            generic_names[pos], label_names[pos], canonical_names)
+        assignment = {'Generic Name':generic_name, 'Form':form, 'Strength':strength, 'genericEdited':generic_edited}
+
         if label_name:
             assignment['Label Name'] = label_name
+            assignment['labelEdited'] = label_edited
 
         for word in line[len(generic_names[pos]) + len(label_names[pos]):]:
             for column in columns[1:]:
