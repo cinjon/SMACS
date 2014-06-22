@@ -28,7 +28,7 @@
 <div class="row">
   <div class="col-md-6">
     <!-- <p class="home-headline">Generic Drugs</p> -->
-    <input type="text" ng-model="genericSelected" placeholder="Search Generic Drugs" typeahead="drug.name for drug in getGenerics($viewValue)" typeahead-loading="loadingDrugs" typeahead-min-length="3" class="form-control home-search">
+    <input type="text" ng-model="genericSelected" placeholder="Search Generic Drugs" typeahead="drug.name for drug in getGenerics($viewValue)" typeahead-loading="loadingDrugs" typeahead-min-length="3" typeahead-on-select="onSelectTypeahead($item, $model, $label)" class="form-control home-search">
     <i ng-show="loadingDrugs" class="glyphicon glyphicon-refresh"></i>
 
     <div class="drug-list" ng-show="showGenerics">
@@ -42,7 +42,6 @@
 
 
   <div class="col-md-6">
-    <!-- <p class="home-headline">Brand Name Drugs</p> -->
     <input type="text" ng-model="labelSelected" placeholder="Search Brand Drugs" typeahead="drug.name for drug in getLabels($viewValue)" typeahead-loading="loadingDrugs" typeahead-min-length="3" class="form-control home-search">
     <i ng-show="loadingDrugs" class="glyphicon glyphicon-refresh"></i>
 

@@ -1,10 +1,10 @@
 <div class="row edit-row" ng-repeat="drug in drugs track by $index | limitTo:50">
   <div class="row edit-title">
     <div class="edit-field">
-      {{genericNames[$index]}}
+      <b>Generic Name</b>: {{genericNames[$index]}}
     </div>
     <div class="edit-field">
-      {{labelNames[$index]}}
+      <b>Brand Name</b>: {{labelNames[$index]}}
     </div>
   </div>
   <div class="row">

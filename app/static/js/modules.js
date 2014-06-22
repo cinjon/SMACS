@@ -18,6 +18,12 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
     $scope.showGenerics = true;
     $scope.showLabels = true;
 
+    $scope.onSelectTypeahead = function(item, model, label) {
+      console.log(item)
+      console.log(model)
+      console.log(label);
+    }
+
     $scope.handleSelection = function(item) {
       return $http.get('/drug-unique-id/' + item.type + '/' + item.name, {}).then(function(result) {
         $location.url('/drug/' + result.data.unique_id);
@@ -41,7 +47,7 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
     });
 
     $http.get('/get-random-drugs/label/10', {}).then(function(result) {
-      $scope.randomLabels = result.data;
+      $scope.randomLabels = result.data.data;
     });
   })
   .controller('drugDetail', function($scope, $routeParams, Drug) {
@@ -114,8 +120,6 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
       $scope.drugs = result.data.data;
       $scope.genericNames = get_field_from_drugs($scope.drugs, 'generic_name');
       $scope.labelNames = get_field_from_drugs($scope.drugs, 'label_name');
-      console.log($scope.genericNames);
-      console.log($scope.labelNames);
     });
     $http.get('/typeahead-canonical-names', {}).then(function(result) {
       $scope.canonicalNames = result.data.data;
@@ -138,7 +142,7 @@ angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngReso
       });
     }
     $scope.addToCanonicalNames = function(data, key) {
-      if (key in data && $scope.canonicalNames.indexOf(data[key]) > -1) {
+      if (key in data && $scope.canonicalNames.indexOf(data[key]) == -1) {
         $scope.canonicalNames.push(data[key]);
       }
     }
@@ -207,7 +211,7 @@ var capitalize_all = function(arr) {
 
 var get_field_from_drugs = function(drugs, field) {
   return drugs.map(function(drug) {
-    return drug[field];
+    return drug[field] || 'None'
   });
 }
 
