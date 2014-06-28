@@ -1,9 +1,9 @@
 'use strict';
 
-var drugForms = ['tablet', 'capsule', 'cream', 'drops', 'suspension',
-                 'vial', 'spray', 'ointment', 'lotion', 'syrup',
-                 'syringe', 'elixir', 'gel', 'powder', 'piggyback',
-                 'shampoo', 'other'];
+var drugForms = _.sortBy(['tablet', 'capsule', 'cream', 'drops', 'suspension',
+                          'vial', 'spray', 'ointment', 'lotion', 'syrup',
+                          'syringe', 'elixir', 'gel', 'powder', 'piggyback',
+                          'shampoo', 'kit', 'other']);
 
 angular.module('SmacDB', ['ui.bootstrap', 'smacServices', 'smacFilters', 'ngResource', 'ngRoute', 'highcharts-ng'])
   .controller('landing', function($scope, $resource) {

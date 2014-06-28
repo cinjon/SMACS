@@ -254,7 +254,7 @@ def get_generic_name_for_label_drug(words, column):
 
 forms = ['tablet', 'capsule', 'cream', 'drops', 'suspension',
          'vial', 'spray', 'ointment', 'lotion', 'syrup',
-         'syringe', 'elixir', 'gel', 'powder', 'piggyback',
+         'syringe', 'elixir', '0gel', 'powder', 'piggyback', ' kit',
          'shampoo']
 def get_drug_information_from_name_words(generic_words, label_words, canonical_names):
     def get_name_and_strength_of_drug(text):
